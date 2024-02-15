@@ -11,6 +11,9 @@ venv*
 #  Data
 data/*
 
+# DS_Store
+DS_Store
+
 # Prompts
 prompts/
 prompts/*
