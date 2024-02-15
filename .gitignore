@@ -12,7 +12,7 @@ venv*
 data/*
 
 # DS_Store
-DS_Store
+.DS_Store
 
 # Prompts
 prompts/
