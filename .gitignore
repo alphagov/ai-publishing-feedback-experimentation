@@ -12,4 +12,5 @@ venv*
 data/*
 
 # Prompts
+prompts/
 prompts/*
