@@ -11,7 +11,7 @@ def query_bigquery(project_id: str, dataset_id: str, query: str):
         query (str): SQL query to get data from BigQuery
 
     Returns:
-        dict: Dictionary containing feedback records
+        pd.DataFrame: DataFrame containing feedback records
     """
     # Initialize a BigQuery client
     client = bigquery.Client(project=project_id)
@@ -28,7 +28,7 @@ def query_bigquery(project_id: str, dataset_id: str, query: str):
     # Fetch the results of the query
     # results = query_job.result()
 
-    # Write to dict
-    result = [dict(row) for row in query_job]
+    # Write to a df
+    results_df = query_job.to_dataframe()
 
-    return result
+    return results_df

@@ -1,4 +1,37 @@
+import json
+import random
+
 import pandas as pd
+
+
+def sample_from_json(json_file_path: str, n: int):
+    """Generate a random sample of data from a json file
+
+    Args:
+        json_file_path (str): path to json
+        n (int): desired sample size
+
+    Raises:
+        ValueError: If json is not a list
+
+    Returns:
+        list: list of dicts
+    """
+
+    # Load the data from the JSON file
+    with open(json_file_path, "r") as file:
+        data = json.load(file)
+
+    # Assuming the data is a list
+    if not isinstance(data, list):
+        raise ValueError("Data is not a list. This function expects a JSON array.")
+
+    # Sample the data
+    sampled_data = random.sample(
+        data, min(n, len(data))
+    )  # Ensures sample size isn't larger than dataset
+
+    return sampled_data
 
 
 def stratified_sample_with_underrepresented_bias(
