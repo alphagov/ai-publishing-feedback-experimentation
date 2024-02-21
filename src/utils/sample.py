@@ -1,115 +1,124 @@
-import json
 import random
+from collections import Counter, defaultdict
 
-import pandas as pd
 
-
-def sample_from_json(json_file_path: str, n: int):
-    """Generate a random sample of data from a json file
+def calculate_class_proportions(records: list):
+    """
+    Calculates the proportion of each class/label across all records.
 
     Args:
-        json_file_path (str): path to json
-        n (int): desired sample size
+        records (list): A list of dictionaries, where each dictionary is a record and
+                    contains a 'labels' key with its value being a list of labels.
+    Returns:
+        dict: A dictionary with labels as keys and their proportions as values.
+    """
+    label_counts = Counter()
+    total_labels = 0
 
-    Raises:
-        ValueError: If json is not a list
+    for record in records:
+        for label in record["labels"]:
+            label_counts[label] += 1
+            total_labels += 1
+
+    class_proportions = {
+        label: count / total_labels for label, count in label_counts.items()
+    }
+    return class_proportions
+
+
+def get_random_sample(records: list, sample_size: int):
+    """Generate a random sample of data from a list of dicts
+
+    Args:
+        records (list): A list of dictionaries, where each dictionary is a record and
+                    contains a 'labels' key with its value being a list of labels.
+        sample_size (int): desired sample size
 
     Returns:
         list: list of dicts
     """
 
-    # Load the data from the JSON file
-    with open(json_file_path, "r") as file:
-        data = json.load(file)
+    # Sample the dictionaries
+    sampled_dicts = random.sample(records, sample_size)
 
-    # Assuming the data is a list
-    if not isinstance(data, list):
-        raise ValueError("Data is not a list. This function expects a JSON array.")
-
-    # Sample the data
-    sampled_data = random.sample(
-        data, min(n, len(data))
-    )  # Ensures sample size isn't larger than dataset
-
-    return sampled_data
+    return sampled_dicts
 
 
-def stratified_sample_with_underrepresented_bias(
-    df: pd.DataFrame, n: int, underrepresented_bias_frac=0.2
+def get_stratified_sample(
+    records, total_sample_size=20, id_key="feedback_record_id", label_key="labels"
 ):
-    """Create a stratified sample with a bias towards underrepresented classes. Class variable should be called 'labels'.
+    """
+    Performs simplified stratified sampling from a list of records. It aims to return a list
+    of records close to the specified total sample size while approximating class proportions
+    without including any duplicates.
+
+    This function first calculates the proportional sample size for each label based on the
+    occurrences in the input records. It then samples records for each label, ensuring no
+    record is included more than once. If the sum of proportional samples exceeds the total
+    sample size, it reduces the sample size for the most represented label. If the final
+    sampled records are less than the total sample size, it fills the gap with random samples
+    from the remaining records.
 
     Args:
-        df (pd.DataFrame): data to sample from
-        n (int): desired sample size
-        underrepresented_bias_frac(float): proportion of sample that should be made up of underrepresented classes
+        records (list of dict): A list where each dict is a record containing at least a 'labels'
+                                key with its value being a list of labels and an 'id' key.
+        total_sample_size (int): The desired total number of records to sample.
+        id_key (str): The name of the key containing the unique id. Required to ensure
+                        there are no duplicates in the sample.
+        label_key (str): The name of the key containing the labels.
 
     Returns:
-        pd.DataFrame: stratified sample
+        list of dict: A list of sampled records, approximately matching the total sample size,
+                      without any duplicates.
+
     """
-    # Normalize the DataFrame by exploding 'labels'
-    df_normalized = df.explode("labels")
+    # Count the occurrences of each label
+    label_counts = Counter(label for record in records for label in record[label_key])
+    total_labels = sum(label_counts.values())
 
-    # Calculate the proportion of each class
-    class_proportions = df_normalized["labels"].value_counts(normalize=True)
+    # Determine proportional sample sizes for each label
+    label_sample_sizes = {
+        label: max(1, int((count / total_labels) * total_sample_size))
+        for label, count in label_counts.items()
+    }
 
-    # Determine the number of samples for underrepresented classes (20% of n)
-    samples_for_underrepresented = max(1, int(n * underrepresented_bias_frac))
+    # Adjust sample sizes if the sum exceeds total_sample_size
+    while sum(label_sample_sizes.values()) > total_sample_size:
+        max_label = max(label_sample_sizes, key=label_sample_sizes.get)
+        label_sample_sizes[max_label] -= 1
 
-    # Calculate sample sizes for each class, considering the total desired size n and the additional allocation for diversity
-    total_samples_needed = (
-        n + samples_for_underrepresented
-    )  # Adjust total samples to include diversity allocation
+    grouped_records = defaultdict(list)
+    for record in records:
+        for label in record[label_key]:
+            grouped_records[label].append(record)
 
-    # Calculate initial sample size per class before adding diversity, attempting to respect original proportions
-    initial_samples_per_class = (
-        (class_proportions * (total_samples_needed - samples_for_underrepresented))
-        .round()
-        .astype(int)
-    )
+    sampled_records = []
+    sampled_ids = set()  # Track sampled record IDs to prevent duplicates
 
-    # Ensure the sum of initial samples does not exceed total_samples_needed due to rounding adjustments
-    while initial_samples_per_class.sum() > (
-        total_samples_needed - samples_for_underrepresented
-    ):
-        initial_samples_per_class[initial_samples_per_class.idxmax()] -= 1
-
-    # Sample based on calculated sizes
-    initial_samples_list = [
-        df_normalized[df_normalized["labels"] == cls].sample(
-            n=min(cnt, len(df_normalized[df_normalized["labels"] == cls])),
-            random_state=42,
-        )
-        for cls, cnt in initial_samples_per_class.items()
-        if cnt > 0
-    ]
-    initial_samples = pd.concat(initial_samples_list)
-
-    # Now add diversity: sample from underrepresented classes not already covered in initial_samples
-    covered_classes = initial_samples["labels"].unique()
-    additional_classes = df_normalized[~df_normalized["labels"].isin(covered_classes)][
-        "labels"
-    ].unique()
-
-    if additional_classes.size > 0:
-        additional_samples_list = [
-            df_normalized[df_normalized["labels"] == cls].sample(n=1, random_state=42)
-            for cls in additional_classes
+    for label, sample_size in label_sample_sizes.items():
+        available_records = [
+            record
+            for record in grouped_records[label]
+            if record[id_key] not in sampled_ids
         ]
-        additional_samples = pd.concat(additional_samples_list)
-        # Combine initial and additional samples
-        final_sample = (
-            pd.concat([initial_samples, additional_samples]).drop_duplicates().head(n)
+        samples = random.sample(
+            available_records, min(sample_size, len(available_records))
         )
-    else:
-        final_sample = initial_samples.head(n)
+        sampled_records.extend(samples)
+        sampled_ids.update(record[id_key] for record in samples)
 
-    # Join back on to df to get full set of labels per record
-    final_sample = pd.merge(
-        final_sample.drop(columns=["labels"]),
-        df[["feedback_record_id", "labels"]],
-        on="feedback_record_id",
-        how="left",
-    )
+    # Adjust the final sampled records to meet the total_sample_size - required due to multi-labels
+    if len(sampled_records) > total_sample_size:
+        sampled_records = random.sample(sampled_records, total_sample_size)
+    elif len(sampled_records) < total_sample_size:
+        remaining_records = [
+            record for record in records if record[id_key] not in sampled_ids
+        ]
+        if remaining_records:
+            additional_samples = random.sample(
+                remaining_records,
+                min(total_sample_size - len(sampled_records), len(remaining_records)),
+            )
+            sampled_records.extend(additional_samples)
 
-    return final_sample
+    return sampled_records
