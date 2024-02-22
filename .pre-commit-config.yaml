@@ -17,3 +17,21 @@ repos:
   rev: 5.13.2
   hooks:
     - id: isort
+- repo: https://github.com/PyCQA/flake8
+  rev: 6.0.0
+  hooks:
+    - id: flake8
+      name: flake8 - Python linting
+- repo: https://github.com/Yelp/detect-secrets
+  rev: v1.0.3
+  hooks:
+    - id: detect-secrets
+      name: detect-secrets - Detect secrets in staged code
+      args: [ "--baseline", ".secrets.baseline" ]
+      exclude: .*/tests/.*
+- repo: local
+  hooks:
+    - id: tests
+      name: run tests
+      entry: make test
+      language: python
