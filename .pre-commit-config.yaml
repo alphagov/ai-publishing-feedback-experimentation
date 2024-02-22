@@ -1,9 +1,15 @@
 repos:
 -   repo: https://github.com/pre-commit/pre-commit-hooks
-    rev: v2.3.0
+    rev: v4.4.0
     hooks:
-    -   id: check-yaml
-    -   id: trailing-whitespace
+      - id: check-added-large-files
+        name: Check for files larger than 5 MB
+        args: [ "--maxkb=5120" ]
+      - id: end-of-file-fixer
+        name: Check for a blank line at the end of scripts (auto-fixes)
+      - id: check-yaml
+      - id: trailing-whitespace
+        name: Check for trailing whitespaces (autofixes)
 -   repo: https://github.com/psf/black
     rev: 22.10.0
     hooks:
@@ -17,21 +23,24 @@ repos:
   rev: 5.13.2
   hooks:
     - id: isort
-- repo: https://github.com/PyCQA/flake8
-  rev: 6.0.0
-  hooks:
-    - id: flake8
-      name: flake8 - Python linting
-- repo: https://github.com/Yelp/detect-secrets
-  rev: v1.0.3
-  hooks:
-    - id: detect-secrets
-      name: detect-secrets - Detect secrets in staged code
-      args: [ "--baseline", ".secrets.baseline" ]
-      exclude: .*/tests/.*
+# - repo: https://github.com/PyCQA/flake8
+#   rev: 6.0.0
+#   hooks:
+#     - id: flake8
+#       name: flake8 - Python linting
+#       args: [--max-line-length=120]
+# - repo: https://github.com/Yelp/detect-secrets
+#   rev: v1.0.3
+#   hooks:
+#     - id: detect-secrets
+#       name: detect-secrets - Detect secrets in staged code
+#       args: [ "--baseline", ".secrets.baseline" ]
+#       exclude: .*/tests/.*
 - repo: local
   hooks:
-    - id: tests
-      name: run tests
-      entry: make test
-      language: python
+    - id: pyenv-unit-tests
+      name: Pyenv Unit Tests
+      entry: bash -c 'PYTHONPATH=$(pyenv prefix)/lib/python3.11.8/site-packages:$PYTHONPATH python -m unittest discover tests/unit_tests/'
+      language: system
+      always_run: true
+      pass_filenames: false

@@ -1,4 +1,3 @@
-import pandas as pd
 from google.cloud import bigquery
 
 
@@ -17,7 +16,7 @@ def query_bigquery(project_id: str, dataset_id: str, query: str):
     client = bigquery.Client(project=project_id)
 
     # Construct a reference to the dataset
-    dataset_ref = client.dataset(dataset_id)
+    # dataset_ref = client.dataset(dataset_id)
 
     # Make a BigQuery API request to run the query
     query_job = client.query(query)
