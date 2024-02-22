@@ -28,6 +28,7 @@ google-cloud-core==2.4.1
 google-crc32c==1.5.0
 google-resumable-media==2.7.0
 googleapis-common-protos==1.62.0
+-e git+https://github.com/alphagov/ai-publishing-feedback-experimentation.git@b6174f4cae6117997536b35dd25cd3d4b5cff219#egg=govuk_ai_publishing_feedback
 h11==0.14.0
 httpcore==1.0.2
 httpx==0.26.0
