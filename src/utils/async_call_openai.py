@@ -1,6 +1,5 @@
 import asyncio
-
-from openai import OpenAI
+from openai import AsyncOpenAI
 
 
 async def create_openai_labelled_data(
@@ -9,7 +8,7 @@ async def create_openai_labelled_data(
     open_api_key: str,
 ) -> dict:
 
-    client = OpenAI(api_key=open_api_key)
+    client = AsyncOpenAI(api_key=open_api_key)
 
     system_prompt = f"""
         You are an expert tasked with categorising user feedback for the UK government, submitted through the website www.gov.uk. Your input is a JSON containing two key pieces of information: a unique identifier (id) and the user feedback (feedback). Your objective is to analyze the feedback and assign an appropriate label or labels that accurately categorise the feedback. Every piece of feedback must receive at least one label. In instances where the feedback is irrelevant or does not pertain to government services (e.g., promotional content, unrelated comments), it should be categorised as "Spam".
@@ -40,7 +39,7 @@ async def create_openai_labelled_data(
             {"role": "system", "content": system_prompt},
             {"role": "user", "content": user_prompt},
         ]
-        completion = client.chat.completions.create(
+        completion = await client.chat.completions.create(
             messages=messages,  # type: ignore
             max_tokens=250,
             temperature=0.75,
@@ -72,8 +71,8 @@ async def get_response(
 
 async def gather_responses(
     labelled_subs_json: str, new_subs_json: str, open_api_key: str
-):
-    await asyncio.gather(
+) -> list:
+    responses = await asyncio.gather(
         *[
             get_response(
                 i,  # type: ignore
@@ -84,3 +83,4 @@ async def gather_responses(
             for i in new_subs_json.split("},")  # type: ignore
         ]
     )
+    return responses
