@@ -14,14 +14,13 @@ PUBLISHING_VIEW = os.getenv("PUBLISHING_VIEW")
 OPENAI_LABELLED_FEEDBACK_TABLE = os.getenv("OPENAI_LABELLED_FEEDBACK_TABLE")
 HF_MODEL_NAME = os.getenv("HF_MODEL_NAME")
 COLLECTION_NAME = os.getenv("COLLECTION_NAME")
-QDRANT_PORT = os.getenv("QDRANT_PORT")
 
-client = QdrantClient(
-    "localhost", port=int(QDRANT_PORT)
-)  # Set port number here to match your local docker container where qdrant is running
 
-# Set any static variables for filtering retrieval
-filter_key = "subject_page_path"
+# Load the model only once, at the start of the app.
+@st.cache_resource()
+def load_qdrant_client(port):
+    client = QdrantClient("localhost", port=port)
+    return client
 
 
 # Load the model only once, at the start of the app.
@@ -31,7 +30,11 @@ def load_model(model_name):
     return model
 
 
-model = load_model(HF_MODEL_NAME)
+client = load_qdrant_client(6333)
+model = load_model("all-mpnet-base-v2")
+
+# Set any static variables for filtering retrieval
+filter_key = "subject_page_path"
 
 
 def main():
@@ -43,7 +46,7 @@ def main():
 
     # Main content area
     st.title("Feedback AI Streamlit Dashboard Prototype")
-    st.subheader("Subheading: Semantic Search of Feedback")
+    st.subheader("Semantic Search of Feedback")
 
     # Free text box for one search term
     # TODO: Enable batch search over a list of terms

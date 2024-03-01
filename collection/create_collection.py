@@ -17,14 +17,9 @@ PUBLISHING_VIEW = os.getenv("PUBLISHING_VIEW")
 OPENAI_LABELLED_FEEDBACK_TABLE = os.getenv("OPENAI_LABELLED_FEEDBACK_TABLE")
 COLLECTION_NAME = os.getenv("COLLECTION_NAME")
 
-print(str(OPENAI_LABELLED_FEEDBACK_TABLE))
-print(OPENAI_LABELLED_FEEDBACK_TABLE)
-
 query_read = query_labelled_feedback.replace(
     "@labelled_feedback_table", str(OPENAI_LABELLED_FEEDBACK_TABLE)
 ).replace("@PUBLISHING_VIEW", str(PUBLISHING_VIEW))
-
-print(query_read)
 
 # Call the function to execute the query
 docs = query_bigquery(
