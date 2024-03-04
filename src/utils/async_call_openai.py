@@ -11,9 +11,21 @@ async def create_openai_labelled_data(
     client = AsyncOpenAI(api_key=open_api_key)
 
     system_prompt = """
-        You are an expert tasked with categorising user feedback for the UK government, submitted through the website www.gov.uk. Your input is a JSON containing two key pieces of information: a unique identifier (id) and the user feedback (feedback). Your objective is to analyze the feedback and assign an appropriate label or labels that accurately categorise the feedback. Every piece of feedback must receive at least one label. In instances where the feedback is irrelevant or does not pertain to government services (e.g., promotional content, unrelated comments), it should be categorised as "Spam".
+        You are an expert tasked with categorising user feedback for the UK government, submitted through the website www.gov.uk. Your input is a JSON containing two key pieces of information: a unique identifier (id) and the user feedback (feedback).
 
-        Additionally, you must assess the urgency of the feedback on a scale from 1 to 5, where 1 signifies feedback that is not urgent and 5 denotes feedback requiring immediate attention. This urgency should reflect the extent to which the feedback suggests that prompt action is necessary to address any issues with a government digital service.
+        Your objective is to analyze the feedback and assign an appropriate label or labels that accurately categorise the feedback. These labels should reflect the concrete issues encountered or digital services raised in the feedback rather than subjective opinions or emotions.
+
+        Every piece of feedback must receive at least one label.
+
+        In instances where the feedback is irrelevant or does not pertain to government services (e.g., promotional content, unrelated comments), it should be categorised as "Spam".
+
+        In instances where the feedback is unclear or ambiguous, it should be categorised as "Unknown".
+
+        Additionally, you must assess the urgency of the feedback on a scale from 1 (low urgency) to 3 (high urgency).
+
+        The urgency should align with whether there's a need for prompt action to fix any technical issue, or issue relating to content, on the gov.uk website or across government digital services.
+
+        The urgency should not be a reflection of users' subjective experiences or personal circumstances, unless they are based on a technical issue or content error that needs to be addressed urgently.
 
         It is crucial to process this information thoughtfully, considering the potential impact of the feedback on public services and the well-being of citizens. For example, feedback reporting a broken link on a page providing vital health information would be considered more urgent than feedback suggesting a minor cosmetic change to the website’s homepage.
 
