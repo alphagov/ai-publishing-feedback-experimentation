@@ -19,7 +19,7 @@ COLLECTION_NAME = os.getenv("COLLECTION_NAME")
 # Load the model only once, at the start of the app.
 @st.cache_resource()
 def load_qdrant_client(port):
-    client = QdrantClient("localhost", port=port)
+    client = QdrantClient(os.getenv("QDRANT_HOST"), port=port)
     return client
 
 
@@ -53,6 +53,14 @@ def main():
     search_term_input = st.sidebar.text_input("Enter one search term: \n (e.g. tax)")
     search_terms = search_term_input.strip().lower()
 
+    k = st.sidebar.slider(
+        "Select number of results to return:",
+        min_value=0,
+        max_value=50,
+        value=10,  # Default value
+        step=1,  # Increment the slider by integers
+    )
+
     # Free text box for comma-separated list of subject pages.
     page_path_input = st.sidebar.text_input(
         "Enter optional subject page paths comma-separated: \n (e.g. /renew-medical-driving-licence)"
@@ -63,20 +71,24 @@ def main():
 
     # Date range slider in the sidebar.
     today = datetime.date.today()
-    start_date = today - datetime.timedelta(
+    user_start_date = today - datetime.timedelta(
         days=90
     )  # Start date X days ago from today.
-    end_date = today  # End date as today.
+    user_end_date = today  # End date as today.
 
     date_range = st.sidebar.slider(
         "Select date range (defunct):",
-        min_value=start_date,
-        max_value=end_date,
-        value=(start_date, end_date),
+        min_value=user_start_date,
+        max_value=user_end_date,
+        value=(user_start_date, user_end_date),
         format="DD/MM/YYYY",
     )
 
-    st.sidebar.write("Selected range:", date_range[0], "to", date_range[1])
+    start_datetime = datetime.datetime.combine(date_range[0], datetime.time(0, 0, 0))
+    end_datetime = datetime.datetime.combine(date_range[1], datetime.time(23, 59, 59))
+
+    print(start_datetime, end_datetime)
+    st.sidebar.write("Selected range:", end_datetime, "to", end_datetime)
 
     if search_term_input:
         print(f"search terms: {search_terms}")
@@ -87,13 +99,29 @@ def main():
             client=client,
             collection_name=COLLECTION_NAME,
             query_embedding=query_embedding,
-            k=5,
+            k=k,
             filter_key=filter_key,
             filter_values=page_paths,
         )
         results = [dict(result) for result in search_results]
+
+        filtered_list = []
+        # Extract and append key-value pairs
+        for d in results:
+            result = d.copy()
+            payload = result.pop("payload", {})
+            # Merge payload key-value pairs into the top-level dictionary
+            result.update(payload)
+
+            result["created_dt"] = datetime.datetime.strptime(
+                result["created"][:19], "%Y-%m-%dT%H:%M:%S"
+            )
+            # Filter on date
+            if start_datetime <= result["created_dt"] <= end_datetime:
+                filtered_list.append(result)
+
         st.write("Top k feedback records:")
-        st.table(results)
+        st.table(filtered_list)
     else:
         st.write("Please supply a search term or terms")
 
