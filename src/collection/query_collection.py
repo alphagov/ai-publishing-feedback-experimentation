@@ -2,7 +2,6 @@ from qdrant_client import QdrantClient
 from qdrant_client.http.models import FieldCondition, Filter, MatchAny
 
 
-# search collection
 def get_top_k_results(
     client: QdrantClient,
     collection_name: str,
@@ -14,12 +13,12 @@ def get_top_k_results(
     """Retrieve top k results from collection
 
     Args:
-        client (QdrantClient): _description_
-        filter_key (_type_, optional): _description_. Defaults to None.
-        filter_values (list, optional): _description_. Defaults to [].
+        client (QdrantClient): The  Qdrant client.
+        filter_key (str, optional): The key to filter the search over. Defaults to None.
+        filter_values (list, optional): The values the filter can take. Defaults to [].
 
     Returns:
-        _type_: _description_
+        list: the results of the search
     """
     if filter_key and filter_values:
         search_result = client.search(
@@ -36,6 +35,3 @@ def get_top_k_results(
         )
 
     return search_result
-
-
-#  eval fn versus labels
