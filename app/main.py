@@ -17,6 +17,7 @@ COLLECTION_NAME = os.getenv("COLLECTION_NAME")
 
 
 # Load the model only once, at the start of the app.
+# TODO: Replace with call to HF Inferece API or OpenAI API
 @st.cache_resource()
 def load_qdrant_client(port):
     client = QdrantClient(os.getenv("QDRANT_HOST"), port=port)
@@ -57,8 +58,8 @@ def main():
         "Select number of results to return:",
         min_value=0,
         max_value=50,
-        value=10,  # Default value
-        step=1,  # Increment the slider by integers
+        value=10,
+        step=1,
     )
 
     # Free text box for comma-separated list of subject pages.
