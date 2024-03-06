@@ -27,7 +27,7 @@ def get_top_k_results(
             query_filter=Filter(
                 must=[FieldCondition(key=filter_key, match=MatchAny(any=filter_values))]
             ),
-            limit=3,
+            limit=k,
         )
     else:
         search_result = client.search(
