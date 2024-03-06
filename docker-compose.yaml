@@ -1,0 +1,57 @@
+version: '3.11'
+
+services:
+  qdrant:
+    image: qdrant/qdrant:latest
+    restart: always
+    container_name: qdrant
+    ports:
+      - 6333:6333
+      - 6334:6334
+    expose:
+      - 6333
+      - 6334
+      - 6335
+    configs:
+      - source: qdrant_config
+        target: /qdrant/config/production.yaml
+    volumes:
+      - ./qdrant_data:/data
+      - ./docker-compose.env:/docker-compose.env:ro
+    env_file:
+    - path: ./docker-compose.env
+
+  init_script:
+    build:
+      context: .
+      dockerfile: ./collection/Containerfile
+    volumes:
+      - ~/.config/gcloud:/root/.config/gcloud:ro
+    depends_on:
+      - qdrant
+    env_file:
+      - path: ./docker-compose.env
+    environment:
+      - QDRANT_HOST=qdrant
+      - GOOGLE_APPLICATION_CREDENTIALS=/root/.config/gcloud/application_default_credentials.json
+
+  streamlit_app:
+    build:
+      context: .
+      dockerfile: ./app/Containerfile
+    ports:
+      - "8501:8501" # Expose the default Streamlit port
+    env_file:
+      - path: ./docker-compose.env
+    environment:
+      - QDRANT_HOST=qdrant # Use the service name as the hostname for inter-service communication
+    depends_on:
+      - qdrant
+
+volumes:
+  qdrant_data:
+
+configs:
+  qdrant_config:
+    content: |
+      log_level: INFO
