@@ -2,10 +2,10 @@ query_labelled_feedback = """
 
 SELECT
     feedback.type,
-    feedback.created,
+    DATE(feedback.created) AS created,
     feedback.subject_page_path,
     CONCAT('https://www.gov.uk', feedback.subject_page_path) AS reconstructed_path,
-    feedback.feedback_record_id,
+    CAST(feedback.feedback_record_id AS STRING) AS feedback_record_id,
     feedback.response_value,
     feedback.embeddings,
     feedback.sentiment,

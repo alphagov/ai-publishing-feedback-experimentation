@@ -41,7 +41,7 @@ filter_key = "subject_page_path"
 def main():
     # Sidebar
     st.sidebar.header("Settings")
-    st.sidebar.text(
+    st.sidebar.write(
         "This dashboard uses a Sentence Transformer model to encode a search term and queries a Qdrant collection to return the most relevant records."
     )
 
@@ -106,19 +106,20 @@ def main():
         )
         results = [dict(result) for result in search_results]
 
+        keys_to_extract = ["created", "subject_page_path", "response_value"]
         filtered_list = []
         # Extract and append key-value pairs
-        for d in results:
-            result = d.copy()
-            payload = result.pop("payload", {})
-            # Merge payload key-value pairs into the top-level dictionary
-            result.update(payload)
+        for result in results:
+            payload = result["payload"]
+            for key in keys_to_extract:
+                if key in payload:  # Check if the key exists in the payload
+                    result[key] = payload[key]
 
-            result["created_dt"] = datetime.datetime.strptime(
-                result["created"][:19], "%Y-%m-%dT%H:%M:%S"
+            result["created_date"] = datetime.datetime.strptime(
+                result["created"], "%Y-%m-%d"
             )
             # Filter on date
-            if start_datetime <= result["created_dt"] <= end_datetime:
+            if start_datetime <= result["created_date"] <= end_datetime:
                 filtered_list.append(result)
 
         st.write("Top k feedback records:")
