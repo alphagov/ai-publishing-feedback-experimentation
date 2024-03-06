@@ -26,20 +26,47 @@ def load_model(model_name: str) -> SentenceTransformer:
     return model
 
 
-def calculate_precision(retrieved_records, relevant_records):
-    # Calculate precision
+def calculate_precision(retrieved_records: dict, relevant_records: int) -> float:
+    """
+    Calculate precision
+
+    Args:
+        retrieved_records (int): Number of retrieved records
+        relevant_records (int): Number of relevant records
+
+    Returns:
+        float: Precision
+    """
     true_positives = len(retrieved_records.intersection(relevant_records))
     return true_positives / len(retrieved_records) if retrieved_records else 0
 
 
-def calculate_recall(retrieved_records, relevant_records):
-    # Calculate recall
+def calculate_recall(retrieved_records: dict, relevant_records: int) -> float:
+    """
+    Calculate recall
+
+    Args:
+        retrieved_records (int): Number of retrieved records
+        relevant_records (int): Number of relevant records
+
+    Returns:
+        float: Recall
+    """
     true_positives = len(retrieved_records.intersection(relevant_records))
     return true_positives / len(relevant_records) if relevant_records else 0
 
 
-def calculate_f1_score(precision, recall):
-    # Calculate F1 score
+def calculate_f1_score(precision: dict, recall: int) -> float:
+    """
+    Calculate F1 score
+
+    Args:
+        precision (float): Precision
+        recall (float): Recall
+
+    Returns:
+        float: F1 score
+    """
     return (
         2 * (precision * recall) / (precision + recall)
         if (precision + recall) > 0
@@ -68,11 +95,14 @@ def get_data_for_evaluation() -> dict:
         dataset_id=EVALUATION_DATASET,
         query=query,
     )
-    return [data]
+    return [data]  # TODO: Check if this is the correct return type
 
 
 def assess_retrieval_accuracy(
-    client: QdrantClient, collection_name: str, labels: List[dict], k_threshold: int
+    client: QdrantClient,
+    collection_name: str,
+    labels: List[dict],  # TODO: Check if this is the correct type
+    k_threshold: int,
 ) -> None:
     """
     Assess the retrieval accuracy of a collection.
