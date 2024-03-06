@@ -85,11 +85,10 @@ def main():
         format="DD/MM/YYYY",
     )
 
-    start_datetime = datetime.datetime.combine(date_range[0], datetime.time(0, 0, 0))
-    end_datetime = datetime.datetime.combine(date_range[1], datetime.time(23, 59, 59))
+    start_date = date_range[0]
+    end_date = date_range[1]
 
-    print(start_datetime, end_datetime)
-    st.sidebar.write("Selected range:", end_datetime, "to", end_datetime)
+    st.sidebar.write("Selected range:", start_date, "to", end_date)
 
     if search_term_input:
         print(f"search terms: {search_terms}")
@@ -117,9 +116,9 @@ def main():
 
             result["created_date"] = datetime.datetime.strptime(
                 result["created"], "%Y-%m-%d"
-            )
+            ).date()
             # Filter on date
-            if start_datetime <= result["created_date"] <= end_datetime:
+            if start_date <= result["created_date"] <= end_date:
                 filtered_list.append(result)
 
         st.write("Top k feedback records:")
