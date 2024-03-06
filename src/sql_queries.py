@@ -7,6 +7,8 @@ SELECT
     CONCAT('https://www.gov.uk', feedback.subject_page_path) AS reconstructed_path,
     CAST(feedback.feedback_record_id AS STRING) AS feedback_record_id,
     feedback.response_value,
+    feedback.organisation,
+    feedback.document_type,
     feedback.embeddings,
     feedback.sentiment,
     feedback.spam_classification,

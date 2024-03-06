@@ -6,6 +6,7 @@ from qdrant_client import QdrantClient
 from sentence_transformers import SentenceTransformer
 
 from src.collection.query_collection import get_top_k_results
+from src.common import keys_to_extract
 
 # get env vars
 PUBLISHING_PROJECT_ID = os.getenv("PUBLISHING_PROJECT_ID")
@@ -14,6 +15,8 @@ PUBLISHING_VIEW = os.getenv("PUBLISHING_VIEW")
 OPENAI_LABELLED_FEEDBACK_TABLE = os.getenv("OPENAI_LABELLED_FEEDBACK_TABLE")
 HF_MODEL_NAME = os.getenv("HF_MODEL_NAME")
 COLLECTION_NAME = os.getenv("COLLECTION_NAME")
+
+st.set_page_config(layout="wide")
 
 
 # Load the model only once, at the start of the app.
@@ -105,7 +108,6 @@ def main():
         )
         results = [dict(result) for result in search_results]
 
-        keys_to_extract = ["created", "subject_page_path", "response_value"]
         filtered_list = []
         # Extract and append key-value pairs
         for result in results:
@@ -114,6 +116,8 @@ def main():
                 if key in payload:  # Check if the key exists in the payload
                     result[key] = payload[key]
 
+            result = {key: result[key] for key in keys_to_extract}
+            result["payload"] = payload
             result["created_date"] = datetime.datetime.strptime(
                 result["created"], "%Y-%m-%d"
             ).date()
@@ -122,7 +126,7 @@ def main():
                 filtered_list.append(result)
 
         st.write("Top k feedback records:")
-        st.table(filtered_list)
+        st.dataframe(filtered_list)
     else:
         st.write("Please supply a search term or terms")
 
