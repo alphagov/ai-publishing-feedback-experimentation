@@ -8,7 +8,7 @@ TODO
 
 ## Technical documentation
 
-TODO
+To run the application, make sure you have docker and docker-compose installed, and have the relevant environment variables stored (speak with the AI team). Then run `docker-compose up`.
 
 ## Licence
 

@@ -4,16 +4,23 @@ FROM python:3.11
 # Set the working directory in the container
 WORKDIR /app
 
-# Copy the python script into the container at /app
+# Install Poetry
+RUN pip install poetry
+
+# Copy the python script and configuration files into the container at /app
 COPY . /app
-COPY .env /app
+COPY docker-compose.env /app
 
-# Install Python dependencies (if any)
-# If you have dependencies, make sure to copy and install them as well
-COPY requirements.txt /app
-RUN pip install --timeout=1000 --no-cache-dir -r requirements.txt
+# Copy Poetry configuration files
+COPY pyproject.toml poetry.lock* /app/
 
-RUN pip install -e .
+# Install Python dependencies using Poetry
+# Note: Using `--no-root` to not install the project package yet
+RUN poetry config virtualenvs.create false && \
+    poetry install --no-dev --no-interaction --no-ansi --no-root
+
+# Now install the project package, in editable mode if needed
+RUN poetry run pip install -e .
 
 # Command to run the script
 # This might need to wait for Qdrant to be fully ready
