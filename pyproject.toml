@@ -1,0 +1,30 @@
+[tool.poetry]
+name = "ai-publishing-feedback-experimentation"
+version = "0.1.0"
+description = "A prototype tool to augment feedback search with AI"
+authors = ["Richard Eveson <richard.eveson@digital.cabinet-office.gov.uk>", "Harry Wrightson <harry.wrightson@digital.cabinet-office.gov.uk>"]
+license = "MIT License"
+readme = "README.md"
+packages = [{include = "src"}]
+
+[tool.poetry.dependencies]
+python = "^3.11"
+qdrant-client = "^1.8.0"
+google = "^3.0.0"
+streamlit = "^1.31.1"
+sentence-transformers = "^2.5.1"
+google-cloud-bigquery = "^3.18.0"
+
+
+[tool.poetry.group.dev.dependencies]
+black = "^24.2.0"
+flake8 = "^7.0.0"
+pytest = "^8.0.2"
+nbstripout = "^0.7.1"
+ipython = "^8.22.2"
+ipykernel = "^6.29.3"
+pre-commit = "^3.6.2"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"

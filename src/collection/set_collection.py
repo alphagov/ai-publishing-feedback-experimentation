@@ -56,6 +56,7 @@ def create_collection(
         vectors_config=VectorParams(size=size, distance=distance_metric),
         on_disk_payload=True,
     )
+    print(f"Collection {collection_name} created")
 
 
 def upsert_to_collection_from_vectors(
@@ -67,6 +68,7 @@ def upsert_to_collection_from_vectors(
         collection_name (str): name of collection
         data (list[PointStruct]): vectors to upsert
     """
+    print(f"Upserting {len(data)} points to collection {collection_name}...")
     operation_info = client.upsert(
         collection_name=collection_name, wait=True, points=data
     )

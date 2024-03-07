@@ -7,6 +7,8 @@ SELECT
     CONCAT('https://www.gov.uk', feedback.subject_page_path) AS reconstructed_path,
     CAST(feedback.feedback_record_id AS STRING) AS feedback_record_id,
     feedback.response_value,
+    feedback.organisation,
+    feedback.document_type,
     feedback.embeddings,
     feedback.sentiment,
     feedback.spam_classification,
@@ -15,6 +17,7 @@ SELECT
     labels.urgency
 FROM @PUBLISHING_VIEW feedback
 JOIN @labelled_feedback_table labels
-  ON feedback.feedback_record_id=labels.id
+  ON CAST(feedback.feedback_record_id AS INT)=CAST(labels.id AS INT)
 WHERE feedback.created > DATE("2023-08-01")
+LIMIT 1500
 """
