@@ -10,6 +10,12 @@ load_dotenv()
 
 PROJECT_ID = os.getenv("PROJECT_ID")
 EVALUATION_DATASET = os.getenv("EVALUATION_DATASET")
+QDRANT_HOST = os.getenv("QDRANT_HOST")
+
+
+def load_qdrant_client(port):
+    client = QdrantClient(host=QDRANT_HOST, port=port)
+    return client
 
 
 def load_model(model_name: str) -> SentenceTransformer:
@@ -156,7 +162,7 @@ def assess_retrieval_accuracy(
 
 if __name__ == "__main__":
     # Initialize a Qdrant client
-    client = QdrantClient()
+    client = load_qdrant_client(port=6333)
 
     # Get the data for evaluation
     data = get_data_for_evaluation()
