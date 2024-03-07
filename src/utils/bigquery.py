@@ -2,7 +2,7 @@ from google.cloud import bigquery
 from google.api_core.exceptions import NotFound
 
 
-def query_bigquery(project_id: str, dataset_id: str, query: str) -> dict:
+def query_bigquery(project_id: str, query: str):
     """Extracts feedback records from BigQuery
 
     Args:

@@ -4,20 +4,29 @@ FROM python:3.11
 # Set the working directory in the container
 WORKDIR /app
 
+# Install Poetry
+RUN pip install poetry
+
 # Copy the current directory contents into the container at /app
 COPY . /app
-COPY .env /app
+COPY docker-compose.env /app
 
-# Install any needed packages specified in requirements.txt
-RUN pip install --no-cache-dir -r requirements.txt
+# Use Poetry to install the dependencies from pyproject.toml and poetry.lock files
+# Assume pyproject.toml and optionally poetry.lock exists and define the project's dependencies
+COPY pyproject.toml poetry.lock* /app/
 
-RUN pip install -e .
+# Configure Poetry and install dependencies
+# Avoid creating a virtual environment within the Docker container
+RUN poetry config virtualenvs.create false && \
+    poetry install --no-dev --no-interaction --no-ansi
+
+# Now install the project package, in editable mode if needed
+RUN poetry run pip install -e .
 
 # Make port 8501 available to the world outside this container
 EXPOSE 8501
 
-# Define environment variable
-# Use to specify the command-line options you want to start Streamlit with
+# Define environment variable for Streamlit
 ENV STREAMLIT_SERVER_PORT 8501
 
 # Run main.py when the container launches
