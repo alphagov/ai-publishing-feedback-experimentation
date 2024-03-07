@@ -17,6 +17,6 @@ SELECT
     labels.urgency
 FROM @PUBLISHING_VIEW feedback
 JOIN @labelled_feedback_table labels
-  ON feedback.feedback_record_id=labels.id
+  ON CAST(feedback.feedback_record_id AS INT)=CAST(labels.id AS INT)
 WHERE feedback.created > DATE("2023-08-01")
 """

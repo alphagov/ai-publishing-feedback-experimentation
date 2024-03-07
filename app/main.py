@@ -9,11 +9,6 @@ from src.collection.query_collection import get_top_k_results
 from src.common import keys_to_extract
 
 # get env vars
-PUBLISHING_PROJECT_ID = os.getenv("PUBLISHING_PROJECT_ID")
-LABELLED_FEEDBACK_DATASET = os.getenv("LABELLED_FEEDBACK_DATASET")
-PUBLISHING_VIEW = os.getenv("PUBLISHING_VIEW")
-OPENAI_LABELLED_FEEDBACK_TABLE = os.getenv("OPENAI_LABELLED_FEEDBACK_TABLE")
-HF_MODEL_NAME = os.getenv("HF_MODEL_NAME")
 COLLECTION_NAME = os.getenv("COLLECTION_NAME")
 
 st.set_page_config(layout="wide")

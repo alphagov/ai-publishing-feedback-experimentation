@@ -11,7 +11,7 @@ COPY .env /app
 # Install Python dependencies (if any)
 # If you have dependencies, make sure to copy and install them as well
 COPY requirements.txt /app
-RUN pip install --no-cache-dir -r requirements.txt
+RUN pip install --timeout=1000 --no-cache-dir -r requirements.txt
 
 RUN pip install -e .
 
