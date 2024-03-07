@@ -3,18 +3,10 @@ from sentence_transformers import SentenceTransformer
 from typing import List
 from qdrant_client import QdrantClient
 from src.utils.bigquery import query_bigquery
-import os
-from dotenv import load_dotenv
-
-load_dotenv()
-
-PROJECT_ID = os.getenv("PROJECT_ID")
-EVALUATION_DATASET = os.getenv("EVALUATION_DATASET")
-QDRANT_HOST = os.getenv("QDRANT_HOST")
 
 
-def load_qdrant_client(port):
-    client = QdrantClient(host=QDRANT_HOST, port=port)
+def load_qdrant_client(qdrant_host: str, port: int) -> QdrantClient:
+    client = QdrantClient(host=qdrant_host, port=port)
     return client
 
 
@@ -80,7 +72,10 @@ def calculate_f1_score(precision: dict, recall: int) -> float:
     )
 
 
-def get_data_for_evaluation() -> dict:
+def get_data_for_evaluation(
+    evaluation_dataset: str,
+    project_id: str,
+) -> dict:
     """
     Query BQ for labelled feedback data. for use in evaluation.
 
@@ -94,14 +89,15 @@ def get_data_for_evaluation() -> dict:
         urgency
     FROM
         @evaluation_dataset
+    LIMIT(1)
     """
-    query = query.replace("@evaluation_dataset", EVALUATION_DATASET)
+    query = query.replace("@evaluation_dataset", evaluation_dataset)
     data = query_bigquery(
-        project_id=PROJECT_ID,
-        dataset_id=EVALUATION_DATASET,
+        project_id=project_id,
+        dataset_id=evaluation_dataset,
         query=query,
     )
-    return [data]  # TODO: Check if this is the correct return type
+    return data  # TODO: Check if this is the correct return type
 
 
 def assess_retrieval_accuracy(
@@ -130,24 +126,30 @@ def assess_retrieval_accuracy(
     unique_labels = set(label["labels"] for label in labels)
 
     # Retrieve top K results for each label
-    for label in unique_labels:
+    for unique_label in unique_labels:
         # Calculate how many ids contain the label from labels["id"] and labels["labels"]
         relevant_records = len(
-            set(label["id"] for label in labels if label in label["labels"])
+            set(label["id"] for label in labels if unique_label in label["labels"])
         )
+        print(f"relevant_records: {relevant_records}")
 
         # Embed the label
-        query_embedding = model.encode(label)
+        query_embedding = model.encode(unique_label)
+        print(f"query_embedding: {query_embedding}")
 
         # Retrieve the top K results for the label
-        results = get_top_k_results(
-            client=client,
-            collection_name=collection_name,
-            query_embedding=query_embedding,
-            k=k_threshold,
-            filter_key="label",
-            filter_values=[label],
-        )
+        try:
+            results = get_top_k_results(
+                client=client,
+                collection_name=collection_name,
+                query_embedding=query_embedding,
+                k=k_threshold,
+                filter_key="labels",
+                filter_values=[unique_label],
+            )
+        except Exception as e:
+            print(f"get_top_k_results error: {e}")
+            continue
 
         # Calculate precision, recall, and F1 score using the functions defined above
         precision = calculate_precision(results, relevant_records)
@@ -156,21 +158,5 @@ def assess_retrieval_accuracy(
 
         # Print the results
         print(
-            f"Label: {label}, Precision: {precision}, Recall: {recall}, F1 Score: {f1_score}"
+            f"Label: {unique_label}, Precision: {precision}, Recall: {recall}, F1 Score: {f1_score}"
         )
-
-
-if __name__ == "__main__":
-    # Initialize a Qdrant client
-    client = load_qdrant_client(port=6333)
-
-    # Get the data for evaluation
-    data = get_data_for_evaluation()
-
-    # Assess the retrieval accuracy
-    assess_retrieval_accuracy(
-        client=client,
-        collection_name="feedback_collection",
-        labels=data,
-        k_threshold=10,
-    )
