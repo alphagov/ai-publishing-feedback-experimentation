@@ -7,9 +7,18 @@ from sentence_transformers import SentenceTransformer
 
 from src.collection.query_collection import get_top_k_results
 from src.common import keys_to_extract, rename_dictionary
+from src.utils.call_openai_summarise import create_openai_summary
+
+from prompts.openai_summarise import system_prompt, user_prompt
 
 # get env vars
 COLLECTION_NAME = os.getenv("COLLECTION_NAME")
+OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
+
+# config
+similarity_score_threshold = 0.2
+max_context_records = 20
+min_records_for_summarisation = 5
 
 st.set_page_config(layout="wide")
 
@@ -119,10 +128,35 @@ def main():
                 if key in result
             }
             # Filter on date
-            if start_date <= output["created_date"] <= end_date:
+            if (
+                output["similarity_score"] > similarity_score_threshold
+                and start_date <= output["created_date"] <= end_date
+            ):
                 filtered_list.append(output)
 
-        st.write("Top k feedback records:")
+        st.write(f"{len(filtered_list)} relevant feedback records found...")
+
+        # Topic summary where > n records returned
+        # limiting to 20 records for context, to avoid token limits
+
+        if len(filtered_list) > min_records_for_summarisation:
+            feedback_for_context = [record["feedback"] for record in filtered_list]
+            summary = create_openai_summary(
+                system_prompt,
+                user_prompt,
+                feedback_for_context[:max_context_records],
+                OPENAI_API_KEY,
+            )
+            st.write(
+                f"OpenAI Summary of relevant feedback based on {len(feedback_for_context)} records:"
+            )
+            st.write(summary["open_summary"])
+        else:
+            st.write(
+                "Insufficient records for summarisation. Please select a larger date range or different search term."
+            )
+        st.write("------")
+        st.write("Most relevant feedback records:")
         st.dataframe(filtered_list)
     else:
         st.write("Please supply a search term or terms")
