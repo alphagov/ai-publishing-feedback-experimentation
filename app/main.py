@@ -92,72 +92,75 @@ def main():
 
     st.sidebar.write("Selected range:", start_date, "to", end_date)
 
-    if search_term_input:
-        query_embedding = model.encode(search_terms)
-        # Call the search function with filters
-        search_results = get_top_k_results(
-            client=client,
-            collection_name=COLLECTION_NAME,
-            query_embedding=query_embedding,
-            k=k,
-            filter_key=filter_key,
-            filter_values=page_paths,
-        )
-        results = [dict(result) for result in search_results]
-
-        filtered_list = []
-        # Extract and append key-value pairs
-        for result in results:
-            payload = result["payload"]
-            for key in keys_to_extract:
-                if key in payload:  # Check if the key exists in the payload
-                    result[key] = payload[key]
-
-            result = {key: result[key] for key in keys_to_extract}
-            result["payload"] = payload
-            result["created_date"] = datetime.datetime.strptime(
-                result["created"], "%Y-%m-%d"
-            ).date()
-
-            # Rename keys
-            output = {
-                rename_dictionary[key]: result[key]
-                for key in rename_dictionary
-                if key in result
-            }
-            # Filter on date
-            if (
-                output["similarity_score"] > similarity_score_threshold
-                and start_date <= output["created_date"] <= end_date
-            ):
-                filtered_list.append(output)
-
-        st.write(f"{len(filtered_list)} relevant feedback records found...")
-
-        # Topic summary where > n records returned
-        # limiting to 20 records for context, to avoid token limits
-
-        if len(filtered_list) > min_records_for_summarisation:
-            feedback_for_context = [record["feedback"] for record in filtered_list]
-            summary = create_openai_summary(
-                system_prompt,
-                user_prompt,
-                feedback_for_context[:max_context_records],
-                OPENAI_API_KEY,
+    if st.sidebar.button("Apply Filters"):
+        if search_term_input:
+            query_embedding = model.encode(search_terms)
+            # Call the search function with filters
+            search_results = get_top_k_results(
+                client=client,
+                collection_name=COLLECTION_NAME,
+                query_embedding=query_embedding,
+                k=k,
+                filter_key=filter_key,
+                filter_values=page_paths,
             )
-            st.write(
-                f"OpenAI Summary of relevant feedback based on {len(feedback_for_context)} records:"
-            )
-            st.write(summary["open_summary"])
-        else:
-            st.write(
-                "Insufficient records for summarisation. Please select a larger date range or different search term."
-            )
-        st.write("------")
-        st.write("Most relevant feedback records:")
-        st.dataframe(filtered_list)
+            results = [dict(result) for result in search_results]
+
+            filtered_list = []
+            # Extract and append key-value pairs
+            for result in results:
+                payload = result["payload"]
+                for key in keys_to_extract:
+                    if key in payload:  # Check if the key exists in the payload
+                        result[key] = payload[key]
+
+                result = {key: result[key] for key in keys_to_extract}
+                result["payload"] = payload
+                result["created_date"] = datetime.datetime.strptime(
+                    result["created"], "%Y-%m-%d"
+                ).date()
+
+                # Rename keys
+                output = {
+                    rename_dictionary[key]: result[key]
+                    for key in rename_dictionary
+                    if key in result
+                }
+                # Filter on date
+                if (
+                    output["similarity_score"] > similarity_score_threshold
+                    and start_date <= output["created_date"] <= end_date
+                ):
+                    filtered_list.append(output)
+
+            st.write(f"{len(filtered_list)} relevant feedback records found...")
+
+            # Topic summary where > n records returned
+            # limiting to 20 records for context, to avoid token limits
+
+            if len(filtered_list) > min_records_for_summarisation:
+                feedback_for_context = [record["feedback"] for record in filtered_list]
+                summary = create_openai_summary(
+                    system_prompt,
+                    user_prompt,
+                    feedback_for_context[:max_context_records],
+                    OPENAI_API_KEY,
+                )
+                st.write(
+                    f"OpenAI Summary of relevant feedback based on {len(feedback_for_context)} records:"
+                )
+                st.write(summary["open_summary"])
+            else:
+                st.write(
+                    "Insufficient records for summarisation. Please select a larger date range or different search term."
+                )
+            st.write("------")
+            st.write("Most relevant feedback records:")
+            st.dataframe(filtered_list)
     else:
-        st.write("Please supply a search term or terms")
+        st.write(
+            "Please supply a search term or terms and hit Apply Filters to see results..."
+        )
 
 
 if __name__ == "__main__":
