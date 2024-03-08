@@ -93,9 +93,7 @@ def main():
     st.sidebar.write("Selected range:", start_date, "to", end_date)
 
     if search_term_input:
-        print(f"search terms: {search_terms}")
         query_embedding = model.encode(search_terms)
-        print(type(query_embedding), len(query_embedding))
         # Call the search function with filters
         search_results = get_top_k_results(
             client=client,
