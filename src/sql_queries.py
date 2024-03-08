@@ -16,9 +16,13 @@ SELECT
     labels.labels,
     labels.urgency
 FROM @PUBLISHING_VIEW feedback
-JOIN @labelled_feedback_table labels
+JOIN @LABELLED_FEEDBACK_TABLE labels
   ON CAST(feedback.feedback_record_id AS INT)=CAST(labels.id AS INT)
 WHERE feedback.created > DATE("2023-08-01")
 AND document_type != "special route"
 LIMIT 1500
+"""
+
+query_distinct_page_paths = """
+SELECT * FROM @PAGE_PATH_TABLE
 """

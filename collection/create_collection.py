@@ -17,7 +17,7 @@ PUBLISHING_VIEW = os.getenv("PUBLISHING_VIEW")
 COLLECTION_NAME = os.getenv("COLLECTION_NAME")
 
 query_read = query_labelled_feedback.replace(
-    "@labelled_feedback_table", str(LABELLED_FEEDBACK_TABLE)
+    "@LABELLED_FEEDBACK_TABLE", str(LABELLED_FEEDBACK_TABLE)
 ).replace("@PUBLISHING_VIEW", str(PUBLISHING_VIEW))
 
 # Call the function to execute the query
