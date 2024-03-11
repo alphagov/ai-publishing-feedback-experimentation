@@ -35,7 +35,7 @@ def calculate_precision(retrieved_records: dict, relevant_records: int) -> float
     Returns:
         float: Precision
     """
-    true_positives = len(retrieved_records.intersection(relevant_records))
+    true_positives = len(set(retrieved_records).intersection(relevant_records))
     return true_positives / len(retrieved_records) if retrieved_records else 0
 
 
@@ -50,7 +50,7 @@ def calculate_recall(retrieved_records: dict, relevant_records: int) -> float:
     Returns:
         float: Recall
     """
-    true_positives = len(retrieved_records.intersection(relevant_records))
+    true_positives = len(set(retrieved_records).intersection(relevant_records))
     return true_positives / len(relevant_records) if relevant_records else 0
 
 
@@ -129,10 +129,10 @@ def assess_retrieval_accuracy(
     # Retrieve top K results for each label
     for unique_label in unique_labels:
         # Calculate how many ids contain the label from labels["id"] and labels["labels"]
-        relevant_records = len(
-            set(label["id"] for label in labels if unique_label in label["labels"])
+        relevant_records = set(
+            label["id"] for label in labels if unique_label in label["labels"]
         )
-        print(f"relevant_records: {relevant_records}")
+        print(f"relevant_records: {len(relevant_records)}")
 
         # Embed the label
         query_embedding = model.encode(unique_label)
@@ -153,9 +153,10 @@ def assess_retrieval_accuracy(
             print(f"get_top_k_results error: {e}")
             continue
 
+        result_ids = [result.id for result in results]
         # Calculate precision, recall, and F1 score using the functions defined above
-        precision = calculate_precision(results, relevant_records)
-        recall = calculate_recall(results, relevant_records)
+        precision = calculate_precision(result_ids, relevant_records)
+        recall = calculate_recall(result_ids, relevant_records)
         f1_score = calculate_f1_score(precision, recall)
 
         # Print the results
