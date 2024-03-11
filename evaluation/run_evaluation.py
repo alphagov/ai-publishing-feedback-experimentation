@@ -1,20 +1,19 @@
-from src.collection.evaluate_collection import (
-    load_qdrant_client,
-    get_data_for_evaluation,
-    assess_retrieval_accuracy,
-)
 import os
-from dotenv import load_dotenv
 
-load_dotenv()
+from src.collection.evaluate_collection import (
+    assess_retrieval_accuracy,
+    get_data_for_evaluation,
+    load_qdrant_client,
+)
+
+# Get env vars
+PROJECT_ID = os.getenv("PROJECT_ID")
+EVALUATION_DATASET = os.getenv("EVALUATION_DATASET")
+QDRANT_HOST = os.getenv("QDRANT_HOST")
+COLLECTION_NAME = os.getenv("COLLECTION_NAME")
 
 
 def main():
-    # Get env vars
-    PROJECT_ID = os.getenv("PROJECT_ID")
-    EVALUATION_DATASET = os.getenv("EVALUATION_DATASET")
-    QDRANT_HOST = os.getenv("QDRANT_HOST")
-
     # Initialize a Qdrant client
     client = load_qdrant_client(host=QDRANT_HOST, port=6333)
 
@@ -27,7 +26,7 @@ def main():
     # Assess the retrieval accuracy
     assess_retrieval_accuracy(
         client=client,
-        collection_name="feedback_collection",
+        collection_name=COLLECTION_NAME,
         labels=data,
         k_threshold=10,
     )
