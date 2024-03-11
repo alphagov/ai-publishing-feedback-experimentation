@@ -123,7 +123,9 @@ def assess_retrieval_accuracy(
     model = load_model("all-mpnet-base-v2")
 
     # Get unique labels
-    unique_labels = set(label["labels"] for label in labels)
+    unique_labels = set(
+        label["labels"] for label in labels
+    )  # TODO: Check if I want to split this by comma or don't AGG in SQL query. Makes no diff to test it works as it only pulls out one label atm
 
     # Retrieve top K results for each label
     for unique_label in unique_labels:
@@ -160,3 +162,7 @@ def assess_retrieval_accuracy(
         print(
             f"Label: {unique_label}, Precision: {precision}, Recall: {recall}, F1 Score: {f1_score}"
         )
+
+
+# TODO: Calculate Average Precision, Recall, and F1 Score
+# TODO: Use micro or macro precision, recall, and F1 score?
