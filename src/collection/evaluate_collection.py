@@ -73,7 +73,7 @@ def calculate_f1_score(precision: dict, recall: int) -> float:
 
 
 def get_data_for_evaluation(
-    evaluation_dataset: str,
+    evaluation_table: str,
     project_id: str,
 ) -> dict:
     """
@@ -88,13 +88,13 @@ def get_data_for_evaluation(
         ARRAY_TO_STRING(labels, ", ") as labels,
         urgency
     FROM
-        @evaluation_dataset
+        @evaluation_table
     LIMIT(1)
     """
-    query = query.replace("@evaluation_dataset", evaluation_dataset)
+    query = query.replace("@evaluation_table", evaluation_table)
     data = query_bigquery(
         project_id=project_id,
-        dataset_id=evaluation_dataset,
+        dataset_id=evaluation_table,
         query=query,
     )
     return data  # TODO: Check if this is the correct return type

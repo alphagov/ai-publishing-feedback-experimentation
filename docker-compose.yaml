@@ -47,6 +47,22 @@ services:
       - QDRANT_HOST=qdrant # Use the service name as the hostname for inter-service communication
     depends_on:
       - qdrant
+      - init_script
+
+  eval:
+    build:
+      context: .
+      dockerfile: ./app/Containerfile
+    volumes:
+      - ~/.config/gcloud:/root/.config/gcloud:ro
+    env_file:
+      - path: ./docker-compose.env
+    environment:
+      - QDRANT_HOST=qdrant # Use the service name as the hostname for inter-service communication
+      - GOOGLE_APPLICATION_CREDENTIALS=/root/.config/gcloud/application_default_credentials.json
+    depends_on:
+      - qdrant
+      - init_script
 
 volumes:
   qdrant_data:

@@ -8,7 +8,7 @@ from src.collection.evaluate_collection import (
 
 # Get env vars
 PROJECT_ID = os.getenv("PROJECT_ID")
-EVALUATION_DATASET = os.getenv("EVALUATION_DATASET")
+EVALUATION_TABLE = os.getenv("EVALUATION_TABLE")
 QDRANT_HOST = os.getenv("QDRANT_HOST")
 COLLECTION_NAME = os.getenv("COLLECTION_NAME")
 
@@ -20,7 +20,7 @@ def main():
     # Get the data for evaluation
     data = get_data_for_evaluation(
         project_id=PROJECT_ID,
-        evaluation_dataset=EVALUATION_DATASET,
+        evaluation_table=EVALUATION_TABLE,
     )
 
     # Assess the retrieval accuracy
@@ -28,7 +28,7 @@ def main():
         client=client,
         collection_name=COLLECTION_NAME,
         labels=data,
-        k_threshold=10,
+        k_threshold=100,
     )
 
 

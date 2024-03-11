@@ -9,7 +9,7 @@ RUN pip install poetry
 
 # Copy the current directory contents into the container at /app
 COPY . /app
-COPY .env /app
+COPY docker-compose.env /app
 
 # Copy Poetry configuration files
 COPY pyproject.toml poetry.lock* /app/
@@ -21,9 +21,6 @@ RUN poetry config virtualenvs.create false && \
 
 # Now install the project package, in editable mode if needed
 RUN poetry run pip install -e .
-
-# Make port 80 available to the world outside this container
-EXPOSE 8501
 
 # Run app.py when the container launches
 CMD ["python", "run_evaluation.py"]
