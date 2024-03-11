@@ -23,4 +23,4 @@ RUN poetry config virtualenvs.create false && \
 RUN poetry run pip install -e .
 
 # Run app.py when the container launches
-CMD ["python", "run_evaluation.py"]
+CMD ["python", "-u", "evaluation/run_evaluation.py"]

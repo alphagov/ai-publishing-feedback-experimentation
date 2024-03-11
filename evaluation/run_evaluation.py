@@ -7,7 +7,7 @@ from src.collection.evaluate_collection import (
 )
 
 # Get env vars
-PROJECT_ID = os.getenv("PROJECT_ID")
+PUBLISHING_PROJECT_ID = os.getenv("PUBLISHING_PROJECT_ID")
 EVALUATION_TABLE = os.getenv("EVALUATION_TABLE")
 QDRANT_HOST = os.getenv("QDRANT_HOST")
 COLLECTION_NAME = os.getenv("COLLECTION_NAME")
@@ -15,11 +15,11 @@ COLLECTION_NAME = os.getenv("COLLECTION_NAME")
 
 def main():
     # Initialize a Qdrant client
-    client = load_qdrant_client(host=QDRANT_HOST, port=6333)
+    client = load_qdrant_client(QDRANT_HOST, port=6333)
 
     # Get the data for evaluation
     data = get_data_for_evaluation(
-        project_id=PROJECT_ID,
+        project_id=PUBLISHING_PROJECT_ID,
         evaluation_table=EVALUATION_TABLE,
     )
 

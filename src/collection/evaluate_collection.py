@@ -6,7 +6,7 @@ from src.utils.bigquery import query_bigquery
 
 
 def load_qdrant_client(qdrant_host: str, port: int) -> QdrantClient:
-    client = QdrantClient(host=qdrant_host, port=port)
+    client = QdrantClient(qdrant_host, port=port)
     return client
 
 
@@ -94,7 +94,6 @@ def get_data_for_evaluation(
     query = query.replace("@evaluation_table", evaluation_table)
     data = query_bigquery(
         project_id=project_id,
-        dataset_id=evaluation_table,
         query=query,
     )
     return data  # TODO: Check if this is the correct return type
@@ -149,6 +148,7 @@ def assess_retrieval_accuracy(
                 filter_key="labels",
                 filter_values=[unique_label],
             )
+            print(results)
         except Exception as e:
             print(f"get_top_k_results error: {e}")
             continue
