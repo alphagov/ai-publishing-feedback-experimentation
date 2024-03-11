@@ -6,7 +6,7 @@ from qdrant_client import QdrantClient
 from sentence_transformers import SentenceTransformer
 
 from src.collection.query_collection import get_top_k_results
-from src.common import keys_to_extract
+from src.common import keys_to_extract, rename_dictionary
 
 # get env vars
 COLLECTION_NAME = os.getenv("COLLECTION_NAME")
@@ -52,13 +52,8 @@ def main():
     search_term_input = st.sidebar.text_input("Enter one search term: \n (e.g. tax)")
     search_terms = search_term_input.strip().lower()
 
-    k = st.sidebar.slider(
-        "Select number of results to return:",
-        min_value=0,
-        max_value=50,
-        value=10,
-        step=1,
-    )
+    # Setting k -> inf as pLaceholder
+    k = 1000000
 
     # Free text box for comma-separated list of subject pages.
     page_path_input = st.sidebar.text_input(
@@ -76,7 +71,7 @@ def main():
     user_end_date = today  # End date as today.
 
     date_range = st.sidebar.slider(
-        "Select date range (defunct):",
+        "Select date range:",
         min_value=user_start_date,
         max_value=user_end_date,
         value=(user_start_date, user_end_date),
@@ -116,9 +111,16 @@ def main():
             result["created_date"] = datetime.datetime.strptime(
                 result["created"], "%Y-%m-%d"
             ).date()
+
+            # Rename keys
+            output = {
+                rename_dictionary[key]: result[key]
+                for key in rename_dictionary
+                if key in result
+            }
             # Filter on date
-            if start_date <= result["created_date"] <= end_date:
-                filtered_list.append(result)
+            if start_date <= output["created_date"] <= end_date:
+                filtered_list.append(output)
 
         st.write("Top k feedback records:")
         st.dataframe(filtered_list)

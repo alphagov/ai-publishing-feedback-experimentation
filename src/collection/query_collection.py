@@ -20,13 +20,14 @@ def get_top_k_results(
     Returns:
         list: the results of the search
     """
+    filter = Filter(
+        must=[FieldCondition(key=filter_key, match=MatchAny(any=filter_values))]
+    )
     if filter_key and filter_values:
         search_result = client.search(
             collection_name=collection_name,
             query_vector=query_embedding,
-            query_filter=Filter(
-                must=[FieldCondition(key=filter_key, match=MatchAny(any=filter_values))]
-            ),
+            query_filter=filter,
             limit=k,
         )
     else:
