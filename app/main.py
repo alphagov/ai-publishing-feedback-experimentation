@@ -72,6 +72,10 @@ def main():
         [item.strip() for item in page_path_input.split(",")] if page_path_input else []
     )
 
+    urgency_input = st.sidebar.multiselect(
+        "Select urgency (Low:1, Medium:2, High:3):", ["1", "2", "3"], max_selections=3
+    )
+
     # Date range slider in the sidebar.
     today = datetime.date.today()
     user_start_date = today - datetime.timedelta(
@@ -92,6 +96,8 @@ def main():
 
     st.sidebar.write("Selected range:", start_date, "to", end_date)
 
+    filter_dict = {filter_key: page_paths, "urgency": urgency_input}
+
     if st.sidebar.button("Apply Filters"):
         if search_term_input:
             query_embedding = model.encode(search_terms)
@@ -101,8 +107,7 @@ def main():
                 collection_name=COLLECTION_NAME,
                 query_embedding=query_embedding,
                 k=k,
-                filter_key=filter_key,
-                filter_values=page_paths,
+                filter_dict=filter_dict,
             )
             results = [dict(result) for result in search_results]
 

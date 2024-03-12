@@ -3,12 +3,7 @@ from qdrant_client.http.models import FieldCondition, Filter, MatchAny
 
 
 def get_top_k_results(
-    client: QdrantClient,
-    collection_name: str,
-    query_embedding,
-    k: int,
-    filter_key=None,
-    filter_values=[],
+    client: QdrantClient, collection_name: str, query_embedding, k: int, filter_dict={}
 ):
     """Retrieve top k results from collection
 
@@ -21,9 +16,15 @@ def get_top_k_results(
         list: the results of the search
     """
     filter = Filter(
-        must=[FieldCondition(key=filter_key, match=MatchAny(any=filter_values))]
+        must=[
+            FieldCondition(key=filter_key, match=MatchAny(any=filter_values))
+            for filter_key, filter_values in filter_dict.items()
+        ]
     )
-    if filter_key and filter_values:
+
+    print(filter)
+
+    if len(filter_dict) > 0:
         search_result = client.search(
             collection_name=collection_name,
             query_vector=query_embedding,
