@@ -22,7 +22,3 @@ WHERE feedback.created > DATE("2023-08-01")
 AND document_type != "special route"
 LIMIT 1500
 """
-
-query_distinct_page_paths = """
-SELECT * FROM @PAGE_PATH_TABLE
-"""
