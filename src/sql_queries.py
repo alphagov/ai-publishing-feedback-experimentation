@@ -24,5 +24,13 @@ LIMIT 1500
 """
 
 query_distinct_page_paths = """
-SELECT * FROM @PAGE_PATH_TABLE
+SELECT DISTINCT subject_page_path FROM @PUBLISHING_VIEW
+"""
+
+query_distinct_orgs = """
+SELECT DISTINCT organisation FROM @PUBLISHING_VIEW, UNNEST(organisation) as organisation
+"""
+
+query_distinct_doc_type = """
+SELECT DISTINCT document_type FROM @PUBLISHING_VIEW
 """
