@@ -19,6 +19,7 @@ def get_top_k_results(
         must=[
             FieldCondition(key=filter_key, match=MatchAny(any=filter_values))
             for filter_key, filter_values in filter_dict.items()
+            if filter_values
         ]
     )
 
