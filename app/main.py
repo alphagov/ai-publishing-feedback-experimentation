@@ -1,5 +1,6 @@
 import datetime
 import os
+import json
 
 import streamlit as st
 from qdrant_client import QdrantClient
@@ -14,6 +15,7 @@ from prompts.openai_summarise import system_prompt, user_prompt
 # get env vars
 COLLECTION_NAME = os.getenv("COLLECTION_NAME")
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
+FILTER_OPTIONS_PATH = os.getenv("FILTER_OPTIONS_PATH")
 
 # config
 similarity_score_threshold = 0.2
@@ -38,11 +40,16 @@ def load_model(model_name):
     return model
 
 
+@st.cache_resource()
+def load_filter_dropdown_values(path_to_json):
+    with open(path_to_json, "r") as file:
+        data = json.load(file)
+    return data
+
+
 client = load_qdrant_client(6333)
 model = load_model("all-mpnet-base-v2")
-
-# Set any static variables for filtering retrieval
-filter_key = "subject_page_path"
+filter_options = load_filter_dropdown_values(FILTER_OPTIONS_PATH)
 
 
 def main():
@@ -78,6 +85,11 @@ def main():
         max_selections=4,
     )
 
+    org_input = st.sidebar.multiselect(
+        "Select organisation (type to search):",
+        filter_options["orgs"],
+    )
+
     # convert to int if not None, else keep as None
     urgency_input = [int(urgency) if urgency else None for urgency in urgency_input]
 
@@ -101,7 +113,11 @@ def main():
 
     st.sidebar.write("Selected range:", start_date, "to", end_date)
 
-    filter_dict = {filter_key: page_paths, "urgency": urgency_input}
+    filter_dict = {
+        "subject_page_path": page_paths,
+        "urgency": urgency_input,
+        "organisation": org_input,
+    }
 
     if st.sidebar.button("Apply Filters"):
         if search_term_input:

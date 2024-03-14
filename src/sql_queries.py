@@ -7,14 +7,19 @@ SELECT
     CONCAT('https://www.gov.uk', feedback.subject_page_path) AS reconstructed_path,
     CAST(feedback.feedback_record_id AS STRING) AS feedback_record_id,
     feedback.response_value,
+    labels.labels,
+    IFNULL(CAST(labels.urgency AS INT), -1) as urgency,
     feedback.organisation,
+    feedback.primary_organisation,
     feedback.document_type,
     feedback.embeddings,
     feedback.sentiment,
     feedback.spam_classification,
     feedback.spam_probability,
-    labels.labels,
-    labels.urgency
+    feedback.publishing_app,
+    feedback.locale,
+    feedback.title,
+    feedback.taxons
 FROM @PUBLISHING_VIEW feedback
 JOIN @LABELLED_FEEDBACK_TABLE labels
   ON CAST(feedback.feedback_record_id AS INT)=CAST(labels.id AS INT)
