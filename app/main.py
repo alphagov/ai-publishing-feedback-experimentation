@@ -73,8 +73,13 @@ def main():
     )
 
     urgency_input = st.sidebar.multiselect(
-        "Select urgency (Low:1, Medium:2, High:3):", ["1", "2", "3"], max_selections=3
+        "Select urgency (Low:1, Medium:2, High:3, Unknown:-1):",
+        ["1", "2", "3", "-1"],
+        max_selections=4,
     )
+
+    # convert to int if not None, else keep as None
+    urgency_input = [int(urgency) if urgency else None for urgency in urgency_input]
 
     # Date range slider in the sidebar.
     today = datetime.date.today()
