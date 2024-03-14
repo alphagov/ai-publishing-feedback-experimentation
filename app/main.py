@@ -56,38 +56,48 @@ def main():
     # Sidebar
     st.sidebar.header("Settings")
     st.sidebar.write(
-        "This dashboard uses a Sentence Transformer model to encode a search term and queries a Qdrant collection to return the most relevant records."
+        "This dashboard uses a large language model to perform semantic search and return the most relevant feedback records."
     )
 
     # Main content area
     st.title("Feedback AI Streamlit Dashboard Prototype")
     st.subheader("Semantic Search of Feedback")
 
-    # Free text box for one search term
-    # TODO: Enable batch search over a list of terms
-    search_term_input = st.sidebar.text_input("Enter one search term: \n (e.g. tax)")
-    search_terms = search_term_input.strip().lower()
-
-    # Setting k -> inf as pLaceholder
+    # Setting k -> inf as placeholder
     k = 1000000
 
-    # Free text box for comma-separated list of subject pages.
-    page_path_input = st.sidebar.text_input(
-        "Enter optional subject page paths comma-separated: \n (e.g. /renew-medical-driving-licence)"
+    # Free text box for one search term
+    search_term_input = st.sidebar.text_input(
+        "Enter a search term or phrase: \n (e.g. tax, Universal Credit, driving licence)"
     )
-    page_paths = (
-        [item.strip() for item in page_path_input.split(",")] if page_path_input else []
+    search_terms = search_term_input.strip().lower()
+
+    # Free text box for comma-separated list of subject pages.
+    # page_path_input = st.sidebar.text_input(
+    #     "Enter optional subject page paths comma-separated: \n (e.g. /renew-medical-driving-licence)"
+    # )
+    # page_paths = (
+    #     [item.strip() for item in page_path_input.split(",")] if page_path_input else ["/"]
+    # )
+
+    matched_page_paths = st.sidebar.multiselect(
+        "Select path:", filter_options["page_paths"], max_selections=4, default=[]
     )
 
     urgency_input = st.sidebar.multiselect(
-        "Select urgency (Low:1, Medium:2, High:3, Unknown:-1):",
+        "Select urgency (Low:1, High:3, Unknown:-1):",
         ["1", "2", "3", "-1"],
         max_selections=4,
     )
 
     org_input = st.sidebar.multiselect(
-        "Select organisation (type to search):",
-        filter_options["orgs"],
+        "Select organisation (type to search):", filter_options["orgs"], default=[]
+    )
+
+    doc_type_input = st.sidebar.multiselect(
+        "Select document type (type to search):",
+        filter_options["doc_types"],
+        default=[],
     )
 
     # convert to int if not None, else keep as None
@@ -114,9 +124,10 @@ def main():
     st.sidebar.write("Selected range:", start_date, "to", end_date)
 
     filter_dict = {
-        "subject_page_path": page_paths,
+        "subject_page_path": matched_page_paths,
         "urgency": urgency_input,
         "organisation": org_input,
+        "document_type": doc_type_input,
     }
 
     if st.sidebar.button("Apply Filters"):
