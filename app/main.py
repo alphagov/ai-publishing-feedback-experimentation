@@ -9,6 +9,7 @@ from sentence_transformers import SentenceTransformer
 from src.collection.query_collection import get_top_k_results
 from src.common import keys_to_extract
 from src.utils.call_openai_summarise import create_openai_summary
+from src.utils.utils import process_csv_file, process_txt_file
 
 from prompts.openai_summarise import system_prompt, user_prompt
 
@@ -54,8 +55,7 @@ filter_options = load_filter_dropdown_values(FILTER_OPTIONS_PATH)
 
 def main():
     # Sidebar
-    st.sidebar.title("Feedback AI Dashboard")
-    st.sidebar.image("data/gds-1024x669.png", width=200)
+    st.sidebar.image("data/gds-1024x669.png", width=250)
     st.sidebar.write("Use the filters below to search")
 
     # Main content area
@@ -83,11 +83,34 @@ def main():
     # )
 
     matched_page_paths = st.sidebar.multiselect(
-        "Select URL or partial URL:",
+        "Select URL from drop-down:",
         filter_options["page_paths"],
         max_selections=4,
         default=[],
     )
+
+    # File upload for list of URLs
+    uploaded_url_file = st.sidebar.file_uploader(
+        "Alternatively, upload a CSV of URLs to search", type=["txt", "csv"]
+    )
+
+    if uploaded_url_file is not None:
+        # Determine the file type and process accordingly
+        if uploaded_url_file.name.endswith(".txt"):
+            matched_page_paths = (
+                process_txt_file(uploaded_url_file) + matched_page_paths
+            )
+        elif uploaded_url_file.name.endswith(".csv"):
+            matched_page_paths = (
+                process_csv_file(uploaded_url_file) + matched_page_paths
+            )
+        else:
+            st.error("Unsupported file type. Please upload a .txt or .csv file.")
+            return
+
+    # Display the list of URLs
+    st.write("URLs selected:")
+    st.write(matched_page_paths)
 
     urgency_input = st.sidebar.multiselect(
         "Select urgency (Low:1, High:3, Unknown:-1):",
