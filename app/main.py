@@ -7,7 +7,7 @@ from qdrant_client import QdrantClient
 from sentence_transformers import SentenceTransformer
 
 from src.collection.query_collection import get_top_k_results
-from src.common import keys_to_extract, rename_dictionary
+from src.common import keys_to_extract
 from src.utils.call_openai_summarise import create_openai_summary
 
 from prompts.openai_summarise import system_prompt, user_prompt
@@ -124,9 +124,9 @@ def main():
     st.sidebar.write("Selected range:", start_date, "to", end_date)
 
     filter_dict = {
-        "subject_page_path": matched_page_paths,
+        "url": matched_page_paths,
         "urgency": urgency_input,
-        "organisation": org_input,
+        "department": org_input,
         "document_type": doc_type_input,
     }
 
@@ -157,18 +157,12 @@ def main():
                     result["created"], "%Y-%m-%d"
                 ).date()
 
-                # Rename keys
-                output = {
-                    rename_dictionary[key]: result[key]
-                    for key in rename_dictionary
-                    if key in result
-                }
                 # Filter on date
                 if (
-                    output["similarity_score"] > similarity_score_threshold
-                    and start_date <= output["created_date"] <= end_date
+                    result["score"] > similarity_score_threshold
+                    and start_date <= result["created_date"] <= end_date
                 ):
-                    filtered_list.append(output)
+                    filtered_list.append(result)
 
             st.write(f"{len(filtered_list)} relevant feedback records found...")
 
