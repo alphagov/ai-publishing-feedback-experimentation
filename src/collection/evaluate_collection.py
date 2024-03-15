@@ -3,6 +3,7 @@ from sentence_transformers import SentenceTransformer
 from typing import List
 from qdrant_client import QdrantClient
 from src.utils.bigquery import query_bigquery
+import regex as re
 
 
 def load_qdrant_client(qdrant_host: str, port: int) -> QdrantClient:
@@ -24,7 +25,7 @@ def load_model(model_name: str) -> SentenceTransformer:
     return model
 
 
-def calculate_precision(retrieved_records: dict, relevant_records: int) -> float:
+def calculate_precision(retrieved_records: list, relevant_records: int) -> float:
     """
     Calculate precision
 
@@ -89,7 +90,7 @@ def get_data_for_evaluation(
         urgency
     FROM
         @evaluation_table
-    LIMIT(1)
+    LIMIT(10)
     """
     query = query.replace("@evaluation_table", evaluation_table)
     data = query_bigquery(
@@ -99,10 +100,37 @@ def get_data_for_evaluation(
     return data  # TODO: Check if this is the correct return type
 
 
+def get_regex_comparison(data: List[dict]) -> int:
+    """
+    For each label, use re.findall to get a regex count of how many records would
+    be returned if we search for it. Compare this to the number of results returned
+    from semantic search to see which provides better results.
+
+    Args:
+        data (List[dict]): The list of id, labels, and urgency.
+
+    Returns:
+        int: The number of matches.
+    """
+    # Get unique labels and non unique labels
+    unique_labels = set()
+    non_unique_labels = []
+    for record in data:
+        for label in record["labels"].split(","):
+            unique_labels.add(label)
+            non_unique_labels.append(label)
+    # Loop over unique labels and use regex to see how often that label appears in the non_unique_labels
+    non_unique_lens = []
+    for unique_label in unique_labels:
+        matches = len(re.findall(unique_label, " ".join(non_unique_labels)))
+        non_unique_lens.append(matches)
+    return {"unique_label": list(unique_labels), "matches": non_unique_lens}
+
+
 def assess_retrieval_accuracy(
     client: QdrantClient,
     collection_name: str,
-    labels: List[dict],  # TODO: Check if this is the correct type
+    data: List[dict],
     k_threshold: int,
 ) -> None:
     """
@@ -111,7 +139,7 @@ def assess_retrieval_accuracy(
     Args:
         client (Any): The client object.
         collection_name (str): The name of the collection.
-        labels (List[str]): The list of labels.
+        data (List[dict]): The list of id, labels, and urgency.
         k_threshold (int): The threshold for retrieving top K results.
 
     Returns:
@@ -122,21 +150,23 @@ def assess_retrieval_accuracy(
     model = load_model("all-mpnet-base-v2")
 
     # Get unique labels
-    unique_labels = set(
-        label["labels"] for label in labels
-    )  # TODO: Check if I want to split this by comma or don't AGG in SQL query. Makes no diff to test it works as it only pulls out one label atm
+    unique_labels = set()
+    for record in data:
+        for label in record["labels"].split(","):
+            unique_labels.add(label)
+
+    print(f"unique labels: {unique_labels}")
 
     # Retrieve top K results for each label
     for unique_label in unique_labels:
         # Calculate how many ids contain the label from labels["id"] and labels["labels"]
         relevant_records = set(
-            label["id"] for label in labels if unique_label in label["labels"]
+            label["id"] for label in data if unique_label in label["labels"]
         )
         print(f"relevant_records: {len(relevant_records)}")
 
         # Embed the label
         query_embedding = model.encode(unique_label)
-        print(f"query_embedding: {query_embedding}")
 
         # Retrieve the top K results for the label
         try:
@@ -148,12 +178,17 @@ def assess_retrieval_accuracy(
                 filter_key="labels",
                 filter_values=[unique_label],
             )
-            print(results)
+            for scored_point in results:
+                payload = scored_point.payload
+                print(
+                    f"{payload["feedback_record_id"]}: {payload["labels"]}, {payload["response_value"]}"
+                )
         except Exception as e:
             print(f"get_top_k_results error: {e}")
             continue
 
         result_ids = [result.id for result in results]
+        print(result_ids)
         # Calculate precision, recall, and F1 score using the functions defined above
         precision = calculate_precision(result_ids, relevant_records)
         recall = calculate_recall(result_ids, relevant_records)
