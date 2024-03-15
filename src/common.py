@@ -1,7 +1,6 @@
 keys_to_extract = [
     "feedback_record_id",
     "created",
-    "score",
     "feedback",
     "url",
     "page_title",

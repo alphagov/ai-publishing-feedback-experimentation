@@ -6,7 +6,7 @@ import streamlit as st
 from qdrant_client import QdrantClient
 from sentence_transformers import SentenceTransformer
 
-from src.collection.query_collection import get_top_k_results
+from src.collection.query_collection import get_top_k_results, filter_search
 from src.common import keys_to_extract
 from src.utils.call_openai_summarise import create_openai_summary
 from src.utils.utils import process_csv_file, process_txt_file
@@ -57,6 +57,7 @@ def main():
     # Sidebar
     st.sidebar.image("data/gds-1024x669.png", width=250)
     st.sidebar.write("Use the filters below to search")
+    get_summary = st.sidebar.checkbox("Summarise feedback using OpenAI?")
 
     # Main content area
     st.title("Feedback AI Dashboard Prototype")
@@ -158,8 +159,9 @@ def main():
         "document_type": doc_type_input,
     }
 
-    if st.sidebar.button("Apply Filters"):
-        if search_term_input:
+    if st.sidebar.button("Run Search..."):
+        if len(search_term_input) > 0:
+            st.write("Running semantic search...")
             query_embedding = model.encode(search_terms)
             # Call the search function with filters
             search_results = get_top_k_results(
@@ -170,56 +172,68 @@ def main():
                 filter_dict=filter_dict,
             )
             results = [dict(result) for result in search_results]
+        elif len(search_term_input) == 0 and len(filter_dict["url"]) > 0:
+            st.write("Running filter search...")
+            # Call the filter function
+            search_results = filter_search(
+                client=client, collection_name=COLLECTION_NAME, filter_dict=filter_dict
+            )
+            data, _ = search_results
+            results = [dict(result) for result in data]
+        else:
+            st.write(
+                "Please supply a search term or terms and hit Apply Filters to see results..."
+            )
+            st.stop()
 
-            filtered_list = []
-            # Extract and append key-value pairs
-            for result in results:
-                payload = result["payload"]
-                for key in keys_to_extract:
-                    if key in payload:  # Check if the key exists in the payload
-                        result[key] = payload[key]
+        filtered_list = []
+        # Extract and append key-value pairs
+        for result in results:
+            payload = result["payload"]
+            for key in payload:
+                if key in keys_to_extract:  # Check if the key exists in keys_to_extract
+                    result[key] = payload[key]
 
-                result = {key: result[key] for key in keys_to_extract}
-                result["payload"] = payload
-                result["created_date"] = datetime.datetime.strptime(
-                    result["created"], "%Y-%m-%d"
-                ).date()
+            result_ordered = {key: result[key] for key in keys_to_extract}
+            result_ordered["score"] = result["score"] if "score" in result else float(1)
+            result_ordered["payload"] = payload
 
-                # Filter on date
-                if (
-                    result["score"] > similarity_score_threshold
-                    and start_date <= result["created_date"] <= end_date
-                ):
-                    filtered_list.append(result)
+            result_ordered["created_date"] = datetime.datetime.strptime(
+                result_ordered["created"], "%Y-%m-%d"
+            ).date()
 
-            st.write(f"{len(filtered_list)} relevant feedback records found...")
+            # Filter on date
+            if (
+                result_ordered["score"] > similarity_score_threshold
+                and start_date <= result_ordered["created_date"] <= end_date
+            ):
+                filtered_list.append(result_ordered)
 
-            # Topic summary where > n records returned
-            # limiting to 20 records for context, to avoid token limits
+        st.write(f"{len(filtered_list)} relevant feedback records found...")
 
-            if len(filtered_list) > min_records_for_summarisation:
-                feedback_for_context = [record["feedback"] for record in filtered_list]
-                summary = create_openai_summary(
-                    system_prompt,
-                    user_prompt,
-                    feedback_for_context[:max_context_records],
-                    OPENAI_API_KEY,
-                )
-                st.write(
-                    f"OpenAI Summary of relevant feedback based on {len(feedback_for_context)} records:"
-                )
-                st.write(summary["open_summary"])
-            else:
-                st.write(
-                    "Insufficient records for summarisation. Please select a larger date range or different search term."
-                )
-            st.write("------")
-            st.write("Most relevant feedback records:")
-            st.dataframe(filtered_list)
-    else:
-        st.write(
-            "Please supply a search term or terms and hit Apply Filters to see results..."
-        )
+        # Topic summary where > n records returned
+        # limiting to 20 records for context, to avoid token limits
+
+        if get_summary and len(filtered_list) > min_records_for_summarisation:
+            feedback_for_context = [record["feedback"] for record in filtered_list]
+            summary = create_openai_summary(
+                system_prompt,
+                user_prompt,
+                feedback_for_context[:max_context_records],
+                OPENAI_API_KEY,
+            )
+            st.write(
+                f"OpenAI Summary of relevant feedback based on {len(feedback_for_context)} records:"
+            )
+            st.write(summary["open_summary"])
+        else:
+            st.write(
+                "Insufficient records for summarisation, or checkbox unchecked. For summary, check box and select a sufficient date range and search term."
+            )
+        st.write("------")
+        st.write("Most relevant feedback records:")
+        st.dataframe(filtered_list)
+        st.success("Success")
 
 
 if __name__ == "__main__":
