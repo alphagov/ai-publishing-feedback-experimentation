@@ -54,14 +54,16 @@ filter_options = load_filter_dropdown_values(FILTER_OPTIONS_PATH)
 
 def main():
     # Sidebar
-    st.sidebar.header("Settings")
-    st.sidebar.write(
-        "This dashboard uses a large language model to perform semantic search and return the most relevant feedback records."
-    )
+    st.sidebar.title("Feedback AI Dashboard")
+    st.sidebar.image("data/gds-1024x669.png", width=200)
+    st.sidebar.write("Use the filters below to search")
 
     # Main content area
-    st.title("Feedback AI Streamlit Dashboard Prototype")
-    st.subheader("Semantic Search of Feedback")
+    st.title("Feedback AI Dashboard Prototype")
+    st.subheader(
+        "This dashboard uses a large language model to perform semantic search and return the most relevant feedback records, \
+            together with a summary of the topics contained in the feedback."
+    )
 
     # Setting k -> inf as placeholder
     k = 1000000
@@ -81,7 +83,10 @@ def main():
     # )
 
     matched_page_paths = st.sidebar.multiselect(
-        "Select path:", filter_options["page_paths"], max_selections=4, default=[]
+        "Select URL or partial URL:",
+        filter_options["page_paths"],
+        max_selections=4,
+        default=[],
     )
 
     urgency_input = st.sidebar.multiselect(
@@ -91,11 +96,11 @@ def main():
     )
 
     org_input = st.sidebar.multiselect(
-        "Select organisation (type to search):", filter_options["orgs"], default=[]
+        "Select organisation:", filter_options["orgs"], default=[]
     )
 
     doc_type_input = st.sidebar.multiselect(
-        "Select document type (type to search):",
+        "Select document type:",
         filter_options["doc_types"],
         default=[],
     )
