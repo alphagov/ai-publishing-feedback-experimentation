@@ -10,7 +10,6 @@ keys_to_extract = [
     "document_type",
     "feedback_type",
     "urgency",
-    "taxons",
     "publishing_app",
     "locale",
     "sentiment",
