@@ -100,32 +100,73 @@ def get_data_for_evaluation(
     return data  # TODO: Check if this is the correct return type
 
 
-def get_regex_comparison(data: List[dict]) -> int:
+def get_all_labels(data: List[dict]) -> str:
     """
-    For each label, use re.findall to get a regex count of how many records would
-    be returned if we search for it. Compare this to the number of results returned
-    from semantic search to see which provides better results.
+    Get all labels from the feedback data.
 
     Args:
         data (List[dict]): The list of id, labels, and urgency.
 
     Returns:
-        int: The number of matches.
+        List[str]: The list of labels.
     """
-    # Get unique labels and non unique labels
+    labels = []
+    for record in data:
+        for label in record["labels"].split(","):
+            labels.append(label)
+    return " ".join(labels)
+
+
+def get_unique_labels(data: List[dict]) -> List[str]:
+    """
+    Get unique labels from the feedback data.
+
+    Args:
+        data (List[dict]): The list of id, labels, and urgency.
+
+    Returns:
+        List[str]: The list of unique labels.
+    """
     unique_labels = set()
-    non_unique_labels = []
     for record in data:
         for label in record["labels"].split(","):
             unique_labels.add(label)
-            non_unique_labels.append(label)
-    # Loop over unique labels and use regex to see how often that label appears in the non_unique_labels
-    non_unique_lens = []
-    joined_labels = " ".join(non_unique_labels)
-    for unique_label in unique_labels:
-        matches = len(re.findall(unique_label, joined_labels, flags=re.IGNORECASE))
-        non_unique_lens.append(matches)
-    return {"unique_label": list(unique_labels), "matches": non_unique_lens}
+    return list(unique_labels)
+
+
+def get_regex_comparison(label: str, all_labels: str) -> int:
+    """
+    Given 1 label, use re.findall to get a regex count of how many records would
+    be returned if we search for it.
+
+    Args:
+        label (str): A unique label to search for.
+        all_labels (str): All labels joined together via \s.
+
+    Returns:
+        int: The number of matches.
+    """
+    matches = len(re.findall(label, all_labels, flags=re.IGNORECASE))
+    return {"label": label, "n_matches": matches}
+
+
+def get_all_regex_counts(data: List[dict]) -> dict:
+    """
+    Get the regex counts for all labels.
+
+    Args:
+        data (List[dict]): The list of id, labels, and urgency.
+
+    Returns:
+        List[dict]: The list of regex counts.
+    """
+    all_labels = get_all_labels(data)  # Get single string of all labels
+    unique_labels = get_unique_labels(data)  # Get list of unique labels
+    regex_counts = {}  # Initialise dict to store label and regex counts
+    for unique_label in unique_labels:  # Loop through unique labels
+        count = get_regex_comparison(unique_label, all_labels)  # Get regex count
+        regex_counts[unique_label] = count  # Store in dict
+    return regex_counts
 
 
 def assess_retrieval_accuracy(
@@ -151,12 +192,7 @@ def assess_retrieval_accuracy(
     model = load_model("all-mpnet-base-v2")
 
     # Get unique labels
-    unique_labels = set()
-    for record in data:
-        for label in record["labels"].split(","):
-            unique_labels.add(label)
-
-    unique_labels = {"application"}
+    unique_labels = get_unique_labels(data)
 
     # Retrieve top K results for each label
     for unique_label in unique_labels:
