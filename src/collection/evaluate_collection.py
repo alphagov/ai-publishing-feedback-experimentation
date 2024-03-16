@@ -74,6 +74,24 @@ def calculate_f1_score(precision: dict, recall: int) -> float:
     )
 
 
+def calculate_f2_score(precision: dict, recall: int) -> float:
+    """
+    Calculate F2 score
+
+    Args:
+        precision (float): Precision
+        recall (float): Recall
+
+    Returns:
+        float: F2 score
+    """
+    return (
+        5 * (precision * recall) / (4 * precision + recall)
+        if (4 * precision + recall) > 0
+        else 0
+    )
+
+
 def get_data_for_evaluation(
     evaluation_table: str,
     project_id: str,
@@ -168,7 +186,7 @@ def get_all_regex_counts(data: List[dict]) -> dict:
     for unique_label in unique_labels:  # Loop through unique labels
         count = get_regex_comparison(unique_label, all_labels)  # Get regex count
         regex_counts[unique_label] = count  # Store in dict
-    return print(regex_counts)
+    return regex_counts  # Return dict
 
 
 def assess_retrieval_accuracy(
@@ -178,7 +196,8 @@ def assess_retrieval_accuracy(
     k_threshold: int,
 ) -> None:
     """
-    Assess the retrieval accuracy of a collection.
+    Assess the retrieval accuracy of a collection by looping over all unique labels,
+    retrieving the top K results for each label, and calculating precision, recall, and F1 score.
 
     Args:
         client (Any): The client object.
@@ -195,6 +214,9 @@ def assess_retrieval_accuracy(
 
     # Get unique labels
     unique_labels = get_unique_labels(data)
+
+    # Test using only unique labels[0]
+    unique_labels = ["application"]
 
     # Retrieve top K results for each label
     for unique_label in unique_labels:
@@ -227,16 +249,14 @@ def assess_retrieval_accuracy(
             continue
 
         result_ids = [result.id for result in results]
+
         # Calculate precision, recall, and F1 score using the functions defined above
         precision = calculate_precision(result_ids, relevant_records)
         recall = calculate_recall(result_ids, relevant_records)
         f1_score = calculate_f1_score(precision, recall)
+        f2_score = calculate_f2_score(precision, recall)
 
         # Print the results
         print(
-            f"Label: {unique_label}, Precision: {precision}, Recall: {recall}, F1 Score: {f1_score}"
+            f"Label: {unique_label}, Precision: {precision: .3f}, Recall: {recall: .3f}, F1 Score: {f1_score: .3f}, F2 Score: {f2_score: .3f}"
         )
-
-
-# TODO: Calculate Average Precision, Recall, and F1 Score
-# TODO: Use micro or macro precision, recall, and F1 score?
