@@ -2,9 +2,8 @@ import os
 
 from src.collection.evaluate_collection import (
     get_data_for_evaluation,
-    assess_retrieval_accuracy,
-    get_regex_comparison,
     load_qdrant_client,
+    get_all_regex_counts,
 )
 
 from dotenv import load_dotenv
@@ -26,16 +25,16 @@ data = get_data_for_evaluation(
     project_id=PUBLISHING_PROJECT_ID,
     evaluation_table=EVALUATION_TABLE,
 )
-
 print("data retrieved")
 
-regex_counts = get_regex_comparison(data=data)
-print(regex_counts)
+regex_counts = get_all_regex_counts(data)
+print("regex counts retrieved")
 
-# # Assess the retrieval accuracy
-assess_retrieval_accuracy(
-    client=client,
-    collection_name=COLLECTION_NAME,
-    data=data,
-    k_threshold=100,
-)
+# # # Assess the retrieval accuracy
+# assess_retrieval_accuracy(
+#     client=client,
+#     collection_name=COLLECTION_NAME,
+#     data=data,
+#     k_threshold=100,
+# )
+# print("retrieval accuracy assessed")

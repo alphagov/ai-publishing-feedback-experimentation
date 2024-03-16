@@ -131,6 +131,8 @@ def get_unique_labels(data: List[dict]) -> List[str]:
     for record in data:
         for label in record["labels"].split(","):
             unique_labels.add(label)
+    unique_labels = [re.sub(r"[\[\]]", "", label) for label in unique_labels]
+    unique_labels = [label.strip() for label in unique_labels]
     return list(unique_labels)
 
 
@@ -141,7 +143,7 @@ def get_regex_comparison(label: str, all_labels: str) -> int:
 
     Args:
         label (str): A unique label to search for.
-        all_labels (str): All labels joined together via \s.
+        all_labels (str): All labels joined together via whitespace.
 
     Returns:
         int: The number of matches.
@@ -166,7 +168,7 @@ def get_all_regex_counts(data: List[dict]) -> dict:
     for unique_label in unique_labels:  # Loop through unique labels
         count = get_regex_comparison(unique_label, all_labels)  # Get regex count
         regex_counts[unique_label] = count  # Store in dict
-    return regex_counts
+    return print(regex_counts)
 
 
 def assess_retrieval_accuracy(
@@ -197,6 +199,7 @@ def assess_retrieval_accuracy(
     # Retrieve top K results for each label
     for unique_label in unique_labels:
         # Calculate how many ids contain the label from labels["id"] and labels["labels"]
+        # TODO: Not sure if we want this or whether we can just use regex counts
         relevant_records = [
             int(label["id"]) for label in data if unique_label in label["labels"]
         ]
@@ -224,7 +227,6 @@ def assess_retrieval_accuracy(
             continue
 
         result_ids = [result.id for result in results]
-        print(result_ids, relevant_records)
         # Calculate precision, recall, and F1 score using the functions defined above
         precision = calculate_precision(result_ids, relevant_records)
         recall = calculate_recall(result_ids, relevant_records)
