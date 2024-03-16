@@ -37,6 +37,7 @@ def calculate_precision(retrieved_records: list, relevant_records: int) -> float
         float: Precision
     """
     true_positives = len(set(retrieved_records).intersection(relevant_records))
+    print(f"true_positives: {true_positives}")
     return true_positives / len(retrieved_records) if retrieved_records else 0
 
 
@@ -90,7 +91,6 @@ def get_data_for_evaluation(
         urgency
     FROM
         @evaluation_table
-    LIMIT(10)
     """
     query = query.replace("@evaluation_table", evaluation_table)
     data = query_bigquery(
@@ -121,8 +121,9 @@ def get_regex_comparison(data: List[dict]) -> int:
             non_unique_labels.append(label)
     # Loop over unique labels and use regex to see how often that label appears in the non_unique_labels
     non_unique_lens = []
+    joined_labels = " ".join(non_unique_labels)
     for unique_label in unique_labels:
-        matches = len(re.findall(unique_label, " ".join(non_unique_labels)))
+        matches = len(re.findall(unique_label, joined_labels, flags=re.IGNORECASE))
         non_unique_lens.append(matches)
     return {"unique_label": list(unique_labels), "matches": non_unique_lens}
 
@@ -155,15 +156,14 @@ def assess_retrieval_accuracy(
         for label in record["labels"].split(","):
             unique_labels.add(label)
 
-    print(f"unique labels: {unique_labels}")
+    unique_labels = {"application"}
 
     # Retrieve top K results for each label
     for unique_label in unique_labels:
         # Calculate how many ids contain the label from labels["id"] and labels["labels"]
-        relevant_records = set(
-            label["id"] for label in data if unique_label in label["labels"]
-        )
-        print(f"relevant_records: {len(relevant_records)}")
+        relevant_records = [
+            int(label["id"]) for label in data if unique_label in label["labels"]
+        ]
 
         # Embed the label
         query_embedding = model.encode(unique_label)
@@ -188,7 +188,7 @@ def assess_retrieval_accuracy(
             continue
 
         result_ids = [result.id for result in results]
-        print(result_ids)
+        print(result_ids, relevant_records)
         # Calculate precision, recall, and F1 score using the functions defined above
         precision = calculate_precision(result_ids, relevant_records)
         recall = calculate_recall(result_ids, relevant_records)
