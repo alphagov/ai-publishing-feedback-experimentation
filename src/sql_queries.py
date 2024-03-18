@@ -28,6 +28,7 @@ AND document_type != "special route"
 LIMIT 1500
 """
 
+
 query_distinct_page_paths = """
 SELECT DISTINCT subject_page_path FROM @PUBLISHING_VIEW
 """
@@ -39,3 +40,4 @@ SELECT DISTINCT organisation FROM @PUBLISHING_VIEW, UNNEST(organisation) as orga
 query_distinct_doc_type = """
 SELECT DISTINCT document_type FROM @PUBLISHING_VIEW
 """
+
