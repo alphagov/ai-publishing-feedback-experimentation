@@ -25,6 +25,7 @@ QDRANT_PORT = os.getenv("QDRANT_PORT")
 similarity_score_threshold = 0.2
 max_context_records = 20
 min_records_for_summarisation = 5
+k = 1000000  # Setting k -> inf as placeholder
 
 st.set_page_config(layout="wide")
 
@@ -59,8 +60,7 @@ filter_options = load_filter_dropdown_values(FILTER_OPTIONS_PATH)
 def main():
     # Sidebar
     st.sidebar.image("data/gds-1024x669.png", width=250)
-    st.sidebar.write("Use the filters below to search")
-    get_summary = st.sidebar.checkbox("Summarise feedback using OpenAI?")
+    st.sidebar.subheader("Feedback AI: Semantic Search and Summarisation\n")
 
     # Main content area
     st.title("Feedback AI Dashboard Prototype")
@@ -69,28 +69,34 @@ def main():
             together with a summary of the topics contained in the feedback."
     )
 
-    # Setting k -> inf as placeholder
-    k = 1000000
-
     # Free text box for one search term
     search_term_input = st.sidebar.text_input(
         "Enter a search term or phrase: \n (e.g. tax, Universal Credit, driving licence)"
     )
     search_terms = search_term_input.strip().lower()
 
-    # Free text box for comma-separated list of subject pages.
-    # page_path_input = st.sidebar.text_input(
-    #     "Enter optional subject page paths comma-separated: \n (e.g. /renew-medical-driving-licence)"
-    # )
-    # page_paths = (
-    #     [item.strip() for item in page_path_input.split(",")] if page_path_input else ["/"]
-    # )
+    get_summary = st.sidebar.checkbox(
+        "I would also like OpenAI to provide a summary of relevant feedback?"
+    )
 
-    matched_page_paths = st.sidebar.multiselect(
-        "Select URL from drop-down:",
+    st.sidebar.subheader("Filter your search\n")
+
+    st.sidebar.write(
+        "Below are filters to refine your search. You can filter your search by specific url (or parent page), urgency, organisation, document type and date range."
+    )
+    st.sidebar.write(
+        "After choosing the appropriate filter values, hit 'Run Search...' to see the results."
+    )
+
+    user_input_pages = st.sidebar.multiselect(
+        "Select URL from drop-down (e.g. '/browse/tax'):",
         filter_options["page_paths"],
-        max_selections=4,
+        # max_selections=4,
         default=[],
+    )
+
+    include_child_pages = st.sidebar.checkbox(
+        "Also include all child pages (e.g. 'browse/tax/...'?"
     )
 
     # File upload for list of URLs
@@ -101,16 +107,26 @@ def main():
     if uploaded_url_file is not None:
         # Determine the file type and process accordingly
         if uploaded_url_file.name.endswith(".txt"):
-            matched_page_paths = (
-                process_txt_file(uploaded_url_file) + matched_page_paths
-            )
+            user_input_pages = process_txt_file(uploaded_url_file) + user_input_pages
         elif uploaded_url_file.name.endswith(".csv"):
-            matched_page_paths = (
-                process_csv_file(uploaded_url_file) + matched_page_paths
-            )
+            user_input_pages = process_csv_file(uploaded_url_file) + user_input_pages
         else:
             st.error("Unsupported file type. Please upload a .txt or .csv file.")
             return
+
+    # Find all urls in filter_options["urls"] that start with urls in matched_page_paths
+    if user_input_pages and include_child_pages:
+        all_pages = filter_options["page_paths"]
+
+        matched_page_paths = [
+            url
+            for url in all_pages
+            if url and any(url.startswith(path) for path in user_input_pages)
+        ]
+    elif not include_child_pages:
+        matched_page_paths = user_input_pages
+    else:
+        matched_page_paths = []
 
     # Display the list of URLs
     st.write("URLs selected:")
