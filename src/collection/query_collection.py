@@ -1,5 +1,5 @@
 from qdrant_client import QdrantClient
-from qdrant_client.http.models import FieldCondition, Filter, MatchAny
+from qdrant_client.http.models import FieldCondition, Filter, MatchAny, MatchValue
 
 
 def get_top_k_results(
@@ -35,4 +35,41 @@ def get_top_k_results(
             collection_name=collection_name, query_vector=query_embedding, limit=k
         )
 
+    return search_result
+
+
+def get_top_scroll_results(
+    client: QdrantClient,
+    collection_name: str,
+    input_string: str,
+    variable_of_interest: str,
+) -> object | None:  # TODO: replace object return type with actual return type
+    """Retrieve all results from collection that contain a given string using
+    Qdrant client.scroll and MatchValue with a given string. If we want to search
+    for multiple values, we can use MatchAny with a list of values.
+
+    Args:
+        client (QdrantClient): The  Qdrant client.
+        collection_name (str): The name of the collection.
+        input_string (str): The string to search for.
+        variable_of_interest (str): The key to filter the search over.
+
+    Returns:
+        list: the results of the search
+    """
+    try:
+        search_result = client.scroll(
+            collection_name=collection_name,
+            scroll_filter=Filter(
+                must=[
+                    FieldCondition(
+                        key=variable_of_interest,
+                        match=MatchValue(value=input_string),
+                    ),
+                ]
+            ),
+        )
+    except Exception as e:
+        print(f"get_top_scroll_results error: {e}")
+        return None
     return search_result
