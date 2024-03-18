@@ -13,4 +13,5 @@ keys_to_extract = [
     "locale",
     "sentiment",
     "spam_classification",
+    "labels",
 ]

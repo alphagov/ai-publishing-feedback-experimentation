@@ -17,6 +17,9 @@ from prompts.openai_summarise import system_prompt, user_prompt
 COLLECTION_NAME = os.getenv("COLLECTION_NAME")
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 FILTER_OPTIONS_PATH = os.getenv("FILTER_OPTIONS_PATH")
+HF_MODEL_NAME = os.getenv("HF_MODEL_NAME")
+QDRANT_HOST = os.getenv("QDRANT_HOST")
+QDRANT_PORT = os.getenv("QDRANT_PORT")
 
 # config
 similarity_score_threshold = 0.2
@@ -30,7 +33,7 @@ st.set_page_config(layout="wide")
 # TODO: Replace with call to HF Inferece API or OpenAI API
 @st.cache_resource()
 def load_qdrant_client(port):
-    client = QdrantClient(os.getenv("QDRANT_HOST"), port=port)
+    client = QdrantClient(QDRANT_HOST, port=port)
     return client
 
 
@@ -48,8 +51,8 @@ def load_filter_dropdown_values(path_to_json):
     return data
 
 
-client = load_qdrant_client(6333)
-model = load_model("all-mpnet-base-v2")
+client = load_qdrant_client(QDRANT_PORT)
+model = load_model(HF_MODEL_NAME)
 filter_options = load_filter_dropdown_values(FILTER_OPTIONS_PATH)
 
 
