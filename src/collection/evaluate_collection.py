@@ -1,4 +1,4 @@
-from src.collection.query_collection import get_top_k_results
+from src.collection.query_collection import get_top_k_results, get_top_scroll_results
 from sentence_transformers import SentenceTransformer
 from typing import List
 from qdrant_client import QdrantClient
@@ -225,6 +225,7 @@ def assess_retrieval_accuracy(
         relevant_records = [
             int(label["id"]) for label in data if unique_label in label["labels"]
         ]
+        print(f"relevant records: {relevant_records}")
 
         # Embed the label
         query_embedding = model.encode(unique_label)
@@ -258,5 +259,44 @@ def assess_retrieval_accuracy(
 
         # Print the results
         print(
-            f"Label: {unique_label}, Precision: {precision: .3f}, Recall: {recall: .3f}, F1 Score: {f1_score: .3f}, F2 Score: {f2_score: .3f}"
+            f"Label: {unique_label}, Precision: {precision: .3f}, \
+              Recall: {recall: .3f}, F1 Score: {f1_score: .3f},   \
+              F2 Score: {f2_score: .3f}"
         )
+
+
+def assess_scroll_retrieval(
+    client: QdrantClient,
+    collection_name: str,
+    data: List[dict],
+):
+    """
+    Assess the retrieval accuracy of a collection by looping over all unique labels,
+    and filtering the search results using MatchValue with a given string.
+
+    Args:
+        client (Any): The client object.
+        collection_name (str): The name of the collection.
+        data (List[dict]): The list of id, labels, and urgency.
+
+    Returns:
+        None
+    """
+    # Get unique labels
+    unique_labels = get_unique_labels(data)
+
+    # Test using only unique labels[0]
+    unique_labels = ["application"]
+
+    # Retrieve top K results for each label
+    for unique_label in unique_labels:
+        # Use get_top_scroll_results to query the label
+        results = get_top_scroll_results(
+            client=client,
+            collection_name=collection_name,
+            input_string=unique_label,
+            variable_of_interest="labels",
+        )
+
+    result_ids = [result.id for result in results]
+    print(result_ids)

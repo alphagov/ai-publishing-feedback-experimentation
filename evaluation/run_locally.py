@@ -5,6 +5,7 @@ from src.collection.evaluate_collection import (
     load_qdrant_client,
     get_all_regex_counts,
     assess_retrieval_accuracy,
+    assess_scroll_retrieval,
 )
 
 from dotenv import load_dotenv
@@ -37,4 +38,11 @@ assess_retrieval_accuracy(
     collection_name=COLLECTION_NAME,
     data=data,
     k_threshold=1000000,
+)
+
+# Assess the scroll retrieval
+assess_scroll_retrieval(
+    client=client,
+    collection_name=COLLECTION_NAME,
+    data=data,
 )
