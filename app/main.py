@@ -60,14 +60,17 @@ filter_options = load_filter_dropdown_values(FILTER_OPTIONS_PATH)
 def main():
     # Sidebar
     st.sidebar.image("data/gds-1024x669.png", width=250)
-    st.sidebar.subheader("Feedback AI: Semantic Search and Summarisation\n")
+    st.sidebar.subheader(
+        "Feedback AI: Semantic Search and Summarisation\n", divider="blue"
+    )
 
     # Main content area
-    st.title("Feedback AI Dashboard Prototype")
+    st.title("Feedback AI Tool")
     st.subheader(
-        "This dashboard uses a large language model to perform semantic search and return the most relevant feedback records, \
-            together with a summary of the topics contained in the feedback."
+        "This dashboard uses a large language model to perform semantic search and summarisation, returning the most relevant feedback records \
+            based on your input."
     )
+    st.divider()
 
     # Free text box for one search term
     search_term_input = st.sidebar.text_input(
@@ -76,10 +79,9 @@ def main():
     search_terms = search_term_input.strip().lower()
 
     get_summary = st.sidebar.checkbox(
-        "I would also like OpenAI to provide a summary of relevant feedback?"
+        "Tick to get an AI-generated summary of relevant feedback"
     )
-
-    st.sidebar.subheader("Filter your search\n")
+    st.sidebar.subheader("Feedback AI: Filter your search\n", divider="blue")
 
     st.sidebar.write(
         "Below are filters to refine your search. You can filter your search by specific url (or parent page), urgency, organisation, document type and date range."
@@ -127,10 +129,6 @@ def main():
         matched_page_paths = user_input_pages
     else:
         matched_page_paths = []
-
-    # Display the list of URLs
-    st.write("URLs selected:")
-    st.write(matched_page_paths)
 
     urgency_input = st.sidebar.multiselect(
         "Select urgency (Low:1, High:3, Unknown:-1):",
@@ -250,9 +248,11 @@ def main():
                 "Insufficient records for summarisation, or checkbox unchecked. For summary, check box and select a sufficient date range and search term."
             )
         st.write("------")
-        st.write("Most relevant feedback records:")
+        st.success("Success! Relevant feedback records:")
         st.dataframe(filtered_list)
-        st.success("Success")
+        # Display the list of URLs
+        st.write("URLs selected:")
+        st.write(matched_page_paths)
 
 
 if __name__ == "__main__":
