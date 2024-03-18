@@ -84,26 +84,26 @@ def main():
     st.sidebar.subheader("Feedback AI: Filter your search\n", divider="blue")
 
     st.sidebar.write(
-        "Below are filters to refine your search. You can filter your search by specific url (or parent page), urgency, organisation, document type and date range."
+        "Below are filters to refine your search. After choosing the appropriate filter values, hit 'Run Search...' to see the results."
     )
-    st.sidebar.write(
-        "After choosing the appropriate filter values, hit 'Run Search...' to see the results."
-    )
+
+    # List of all pages for dropdown and filtering
+    all_pages = filter_options["subject_page_path"]
 
     user_input_pages = st.sidebar.multiselect(
         "Select URL from drop-down (e.g. '/browse/tax'):",
-        filter_options["page_paths"],
+        all_pages,
         # max_selections=4,
         default=[],
-    )
-
-    include_child_pages = st.sidebar.checkbox(
-        "Also include all child pages (e.g. 'browse/tax/...'?"
     )
 
     # File upload for list of URLs
     uploaded_url_file = st.sidebar.file_uploader(
         "Alternatively, upload a CSV of URLs to search", type=["txt", "csv"]
+    )
+
+    include_child_pages = st.sidebar.checkbox(
+        "Also include all child pages (e.g. 'browse/tax/...')?"
     )
 
     if uploaded_url_file is not None:
@@ -118,8 +118,6 @@ def main():
 
     # Find all urls in filter_options["urls"] that start with urls in matched_page_paths
     if user_input_pages and include_child_pages:
-        all_pages = filter_options["page_paths"]
-
         matched_page_paths = [
             url
             for url in all_pages
@@ -130,6 +128,8 @@ def main():
     else:
         matched_page_paths = []
 
+    st.sidebar.divider()
+
     urgency_input = st.sidebar.multiselect(
         "Select urgency (Low:1, High:3, Unknown:-1):",
         ["1", "2", "3", "-1"],
@@ -137,12 +137,12 @@ def main():
     )
 
     org_input = st.sidebar.multiselect(
-        "Select organisation:", filter_options["orgs"], default=[]
+        "Select organisation:", filter_options["organisation"], default=[]
     )
 
     doc_type_input = st.sidebar.multiselect(
         "Select document type:",
-        filter_options["doc_types"],
+        filter_options["document_type"],
         default=[],
     )
 
@@ -243,16 +243,21 @@ def main():
                 f"OpenAI Summary of relevant feedback based on {len(feedback_for_context)} records:"
             )
             st.write(summary["open_summary"])
+        elif get_summary and len(filtered_list) <= min_records_for_summarisation:
+            st.write(
+                "Insufficient feedback records for summarisation. Summarisation requires number of search results to be returned. \
+                    Try providing a longer date range and braoder search parameters."
+            )
+        elif not get_summary and len(filtered_list) > min_records_for_summarisation:
+            st.write(
+                "No summary requested. Check box to get an AI-generated summary of relevant feedback."
+            )
         else:
             st.write(
-                "Insufficient records for summarisation, or checkbox unchecked. For summary, check box and select a sufficient date range and search term."
+                "No summary requested. Insufficient feedback records for summarisation."
             )
-        st.write("------")
         st.success("Success! Relevant feedback records:")
         st.dataframe(filtered_list)
-        # Display the list of URLs
-        st.write("URLs selected:")
-        st.write(matched_page_paths)
 
 
 if __name__ == "__main__":

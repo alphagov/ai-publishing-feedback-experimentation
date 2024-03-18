@@ -24,4 +24,4 @@ RUN poetry run pip install -e .
 
 # Command to run the script
 # This might need to wait for Qdrant to be fully ready
-CMD ["python", "collection/create_collection.py"]
+CMD ["python", "collection/main.py"]
