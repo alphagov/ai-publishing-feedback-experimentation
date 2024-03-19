@@ -29,20 +29,25 @@ data = get_data_for_evaluation(
 )
 print("data retrieved")
 
+# Get the regex counts
 regex_counts = get_all_regex_counts(data)
+print(f"length of regex counts: {regex_counts["application"]["n_matches"]}")
 print("regex counts retrieved")
 
 # Assess the retrieval accuracy
-assess_retrieval_accuracy(
+ss_results = assess_retrieval_accuracy(
     client=client,
     collection_name=COLLECTION_NAME,
     data=data,
     k_threshold=1000000,
 )
+print(f"Dot product search n results: {len(ss_results)}")
 
 # Assess the scroll retrieval
-assess_scroll_retrieval(
+scroll_results = assess_scroll_retrieval(
     client=client,
     collection_name=COLLECTION_NAME,
     data=data,
 )
+print(f"Scroll n results: {len(scroll_results)}")
+print(f"Are scroll and ss results the same? {scroll_results == ss_results}")

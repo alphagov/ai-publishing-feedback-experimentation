@@ -225,11 +225,12 @@ def assess_retrieval_accuracy(
         relevant_records = [
             int(label["id"]) for label in data if unique_label in label["labels"]
         ]
-        print(f"relevant records: {relevant_records}")
-
+        print(unique_label)
+        print(model)
+        print(collection_name)
         # Embed the label
         query_embedding = model.encode(unique_label)
-
+        print(f"embed len {len(query_embedding)}")
         # Retrieve the top K results for the label
         try:
             results = get_top_k_results(
@@ -237,14 +238,10 @@ def assess_retrieval_accuracy(
                 collection_name=collection_name,
                 query_embedding=query_embedding,
                 k=k_threshold,
-                filter_key="labels",
-                filter_values=[unique_label],
+                # filter_key=[],
+                # filter_values=[],
             )
-            for scored_point in results:
-                payload = scored_point.payload
-                print(
-                    f"{payload["feedback_record_id"]}: {payload["labels"]}, {payload["response_value"]}"
-                )
+            print(len(results))
         except Exception as e:
             print(f"get_top_k_results error: {e}")
             continue
@@ -263,6 +260,7 @@ def assess_retrieval_accuracy(
               Recall: {recall: .3f}, F1 Score: {f1_score: .3f},   \
               F2 Score: {f2_score: .3f}"
         )
+        return result_ids
 
 
 def assess_scroll_retrieval(
@@ -298,5 +296,4 @@ def assess_scroll_retrieval(
             variable_of_interest="labels",
         )
 
-    result_ids = [result.id for result in results]
-    print(result_ids)
+        return [result.id for result in results]

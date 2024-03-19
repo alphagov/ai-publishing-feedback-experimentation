@@ -1,5 +1,5 @@
 from qdrant_client import QdrantClient
-from qdrant_client.http.models import FieldCondition, Filter, MatchAny, MatchValue
+from qdrant_client.http.models import FieldCondition, Filter, MatchValue
 
 
 def get_top_k_results(
@@ -9,7 +9,7 @@ def get_top_k_results(
     k: int,
     filter_key=None,
     filter_values=[],
-):
+):  # TODO: Add return type
     """Retrieve top k results from collection
 
     Args:
@@ -20,14 +20,14 @@ def get_top_k_results(
     Returns:
         list: the results of the search
     """
-    filter = Filter(
-        must=[FieldCondition(key=filter_key, match=MatchAny(any=filter_values))]
-    )
+    # filter = Filter(
+    #     must=[FieldCondition(key=filter_key, match=MatchAny(any=filter_values))]
+    # )
     if filter_key and filter_values:
         search_result = client.search(
             collection_name=collection_name,
             query_vector=query_embedding,
-            query_filter=filter,
+            # query_filter=filter,
             limit=k,
         )
     else:
@@ -67,7 +67,7 @@ def get_top_scroll_results(
                 ),
             ]
         ),
-        with_payload=True,
+        with_payload=["feedback_record_id", "response_value"],
         with_vectors=False,
     )
 

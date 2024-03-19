@@ -20,5 +20,4 @@ JOIN @labelled_feedback_table labels
   ON CAST(feedback.feedback_record_id AS INT)=CAST(labels.id AS INT)
 WHERE feedback.created > DATE("2023-08-01")
 AND document_type != "special route"
-LIMIT 1500
 """
