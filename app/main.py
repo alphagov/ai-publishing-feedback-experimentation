@@ -58,10 +58,18 @@ filter_options = load_filter_dropdown_values(FILTER_OPTIONS_PATH)
 
 
 def main():
+    st.markdown(
+        "<style>" + open("app/style.css").read() + "</style>", unsafe_allow_html=True
+    )
+
     # Sidebar
-    st.sidebar.image("data/gds-1024x669.png", width=250)
+    st.sidebar.image("data/govuk-feedback.png", width=250)
     st.sidebar.subheader(
-        "Feedback AI: Semantic Search and Summarisation\n", divider="blue"
+        "Use AI to summarise themes in user feedback\n", divider="blue"
+    )
+
+    st.sidebar.write(
+        "Explore user feedback by topic, URL, urgency rathing, content type  and/or organisation, using AI to summarise themes\n"
     )
 
     # Main content area
@@ -74,17 +82,19 @@ def main():
 
     # Free text box for one search term
     search_term_input = st.sidebar.text_input(
-        "Enter a search term or phrase: \n (e.g. tax, Universal Credit, driving licence)"
+        "Search by topic, keyword or phrase.\n For example, tax, driving licence, Universal Credit"
     )
+    semantic_search_button = st.sidebar.button("See feedback")
     search_terms = search_term_input.strip().lower()
 
     get_summary = st.sidebar.checkbox(
-        "Tick to get an AI-generated summary of relevant feedback"
+        "Summarise relevant feedback",
+        value=True,
     )
-    st.sidebar.subheader("Feedback AI: Filter your search\n", divider="blue")
+    st.sidebar.subheader("Refine your search\n", divider="blue")
 
     st.sidebar.write(
-        "Below are filters to refine your search. After choosing the appropriate filter values, hit 'Run Search...' to see the results."
+        "Explore AI summarisation \n\nUse our AI user feedback assistant to identify themes and summarise user feedback across topics, sets of pages and single pages"
     )
 
     # List of all pages for dropdown and filtering
@@ -96,7 +106,7 @@ def main():
         # max_selections=4,
         default=[],
     )
-
+    filter_search_button = st.sidebar.button("See feedback")
     # File upload for list of URLs
     uploaded_url_file = st.sidebar.file_uploader(
         "Alternatively, upload a CSV of URLs to search", type=["txt", "csv"]
@@ -176,7 +186,7 @@ def main():
         "document_type": doc_type_input,
     }
 
-    if st.sidebar.button("Run Search..."):
+    if any(filter_search_button, semantic_search_button):
         if len(search_term_input) > 0:
             st.write("Running semantic search...")
             query_embedding = model.encode(search_terms)
