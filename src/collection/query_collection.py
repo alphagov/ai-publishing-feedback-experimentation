@@ -43,7 +43,7 @@ def get_top_scroll_results(
     collection_name: str,
     input_string: str,
     variable_of_interest: str,
-) -> object | None:  # TODO: replace object return type with actual return type
+):  # TODO: replace object return type with actual return type
     """Retrieve all results from collection that contain a given string using
     Qdrant client.scroll and MatchValue with a given string. If we want to search
     for multiple values, we can use MatchAny with a list of values.
@@ -57,19 +57,19 @@ def get_top_scroll_results(
     Returns:
         list: the results of the search
     """
-    try:
-        search_result = client.scroll(
-            collection_name=collection_name,
-            scroll_filter=Filter(
-                must=[
-                    FieldCondition(
-                        key=variable_of_interest,
-                        match=MatchValue(value=input_string),
-                    ),
-                ]
-            ),
-        )
-    except Exception as e:
-        print(f"get_top_scroll_results error: {e}")
-        return None
-    return search_result
+    search_result = client.scroll(
+        collection_name=collection_name,
+        scroll_filter=Filter(
+            must=[
+                FieldCondition(
+                    key=variable_of_interest,
+                    match=MatchValue(value=input_string),
+                ),
+            ]
+        ),
+        with_payload=True,
+        with_vectors=False,
+    )
+
+    data, _ = search_result
+    return data
