@@ -71,20 +71,39 @@ def main():
     st.sidebar.write(
         "Explore user feedback by topic, URL, urgency rathing, content type  and/or organisation, using AI to summarise themes\n"
     )
-
+    st.sidebar.divider()
     # Main content area
     st.title("Feedback AI Tool")
-    st.subheader(
+    st.header(
         "This dashboard uses a large language model to perform semantic search and summarisation, returning the most relevant feedback records \
             based on your input."
     )
-    st.divider()
+
+    # Date range slider in the sidebar.
+    today = datetime.date.today()
+    user_start_date = today - datetime.timedelta(
+        days=90
+    )  # Start date X days ago from today.
+    user_end_date = today  # End date as today.
+
+    date_range = st.sidebar.slider(
+        "Select date range:",
+        min_value=user_start_date,
+        max_value=user_end_date,
+        value=(user_start_date, user_end_date),
+        format="DD/MM/YYYY",
+    )
+
+    start_date = date_range[0]
+    end_date = date_range[1]
 
     # Free text box for one search term
     search_term_input = st.sidebar.text_input(
         "Search by topic, keyword or phrase.\n For example, tax, driving licence, Universal Credit"
     )
-    semantic_search_button = st.sidebar.button("See feedback")
+
+    semantic_search_button = st.sidebar.button("See feedback by topic")
+
     search_terms = search_term_input.strip().lower()
 
     get_summary = st.sidebar.checkbox(
@@ -159,26 +178,6 @@ def main():
     # convert to int if not None, else keep as None
     urgency_input = [int(urgency) if urgency else None for urgency in urgency_input]
 
-    # Date range slider in the sidebar.
-    today = datetime.date.today()
-    user_start_date = today - datetime.timedelta(
-        days=90
-    )  # Start date X days ago from today.
-    user_end_date = today  # End date as today.
-
-    date_range = st.sidebar.slider(
-        "Select date range:",
-        min_value=user_start_date,
-        max_value=user_end_date,
-        value=(user_start_date, user_end_date),
-        format="DD/MM/YYYY",
-    )
-
-    start_date = date_range[0]
-    end_date = date_range[1]
-
-    st.sidebar.write("Selected range:", start_date, "to", end_date)
-
     filter_dict = {
         "url": matched_page_paths,
         "urgency": urgency_input,
@@ -186,7 +185,7 @@ def main():
         "document_type": doc_type_input,
     }
 
-    if any(filter_search_button, semantic_search_button):
+    if any([filter_search_button, semantic_search_button]):
         if len(search_term_input) > 0:
             st.write("Running semantic search...")
             query_embedding = model.encode(search_terms)

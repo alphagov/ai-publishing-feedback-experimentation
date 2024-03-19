@@ -11,7 +11,7 @@ RUN pip install poetry
 COPY . /app
 COPY docker-compose.env /app
 COPY app/data/distinct_dimensions.json /app/data
-COPY app/data/gds-1024x669.png /app/data
+COPY app/data/govuk-feedback.png /app/data
 
 # Use Poetry to install the dependencies from pyproject.toml and poetry.lock files
 # Assume pyproject.toml and optionally poetry.lock exists and define the project's dependencies

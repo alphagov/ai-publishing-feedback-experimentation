@@ -1,10 +1,52 @@
 section[data-testid='stSidebar']>div:nth-of-type(1) {
-    background-color: #1d70b8;
+    background-color: #cbcbcb;
 }
 
 button[kind="header"] {
     background-color: transparent;
-    color: rgb(255, 255, 255)
+    color: rgb(0, 0, 0)
+}
+
+/* div[data-testid="stSidebar"] input[type="checkbox"] {
+    accent-color: green;
+    background-color: green;
+}
+
+div[data-testid="stSidebar"] input[type="button"]::before {
+    accent-color: green;
+} */
+
+/* Checkbox */
+div.stSlider > div[data-baseweb = "slider"] > div[data-testid="stTickBar"] > div {
+    background: green;
+}
+
+/* Slider Cursor */
+div.stSlider > div[data-baseweb="slider"] > div > div > div[role="slider"]{
+    background-color: rgb(14, 38, 74); box-shadow: rgb(14 38 74 / 20%) 0px 0px 0px 0.2rem;
+}
+
+/* Slider Colour MinMax */
+div.stSlider > div[data-baseweb = "slider"] > div[data-testid="stTickBar"] > div {
+    background: rgb(1 1 1 / 0%);
+}
+
+/* Slider Cursor */
+div.stSlider > div[data-baseweb="slider"] > div > div > div[role="slider"]{
+    background-color: rgb(14, 38, 74); box-shadow: rgb(14 38 74 / 20%) 0px 0px 0px 0.2rem;
+}
+
+/* Slider number */
+div.stSlider > div[data-baseweb="slider"] > div > div > div > div
+                                { color: rgb(14, 38, 74);
+}
+
+
+div.stSlider > div[data-baseweb = "slider"] > div > div {
+    background: green }
+
+div[role="listbox"] ul {
+    background-color: #cbcbcb;
 }
 
 @media(max-width: 272) {
@@ -15,5 +57,5 @@ button[kind="header"] {
 }
 
 [data-testid="stSidebar"] {
-    background-color: #fff;
+    background-color: #1d70b8;;
 }
