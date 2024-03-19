@@ -8,7 +8,7 @@ def jsonify_data(records: list, labelled=False):
     :return: json string of feedback records
     """
     subs = []
-    for i, item in enumerate(records):
+    for item in records:
         response_value = item["concatenated_response_value"]
         subs.append(
             {
