@@ -33,8 +33,8 @@ st.set_page_config(layout="wide")
 # Load the model only once, at the start of the app.
 # TODO: Replace with call to HF Inferece API or OpenAI API
 @st.cache_resource()
-def load_qdrant_client(port):
-    client = QdrantClient(QDRANT_HOST, port=port)
+def load_qdrant_client():
+    client = QdrantClient(QDRANT_HOST, port=QDRANT_PORT)
     return client
 
 
@@ -52,7 +52,7 @@ def load_filter_dropdown_values(path_to_json):
     return data
 
 
-client = load_qdrant_client(QDRANT_PORT)
+client = load_qdrant_client()
 model = load_model(HF_MODEL_NAME)
 filter_options = load_filter_dropdown_values(FILTER_OPTIONS_PATH)
 
