@@ -16,6 +16,7 @@ venv*
 
 #  Data
 data/*
+app/data/*
 qdrant_storage
 
 # DS_Store

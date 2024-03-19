@@ -10,6 +10,8 @@ TODO
 
 To run the application, make sure you have docker and docker-compose installed, and have the relevant environment variables stored (speak with the AI team). Then run `docker-compose up`.
 
+You will also need to download data to fill the dashboard dropdowns. The code to do this can be found in `notebooks/get_feedback_dimensions.ipynb`
+
 ### A note on Poetry
 
 To install dependencies into a new environment, run `poetry install`. This will create an environment if one does not already exist, following the naming convention "project-name-py3.XX".
@@ -33,7 +35,6 @@ If you're in the root directory of our folder you can download the data using th
 
 *Make sure you have the necessary permissions to access the GCS bucket and download the file. If you're not already authenticated,
 you may need to run `gcloud auth login` to set up your credentials.*
-
 
 ## Licence
 
