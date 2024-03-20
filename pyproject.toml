@@ -14,12 +14,11 @@ google = "^3.0.0"
 streamlit = "^1.31.1"
 sentence-transformers = "^2.5.1"
 google-cloud-bigquery = "^3.18.0"
-jupyter = "^1.0.0"
-python-dotenv = "^1.0.1"
+openai = "^1.13.3"
 
 
 [tool.poetry.group.dev.dependencies]
-black = "^24.2.0"
+black = {extras = ["jupyter"], version = "^24.2.0"}
 flake8 = "^7.0.0"
 pytest = "^8.0.2"
 nbstripout = "^0.7.1"

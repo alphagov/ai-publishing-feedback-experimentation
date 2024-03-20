@@ -1,15 +1,31 @@
 import datetime
 import os
+import json
 
 import streamlit as st
 from qdrant_client import QdrantClient
 from sentence_transformers import SentenceTransformer
 
-from src.collection.query_collection import get_top_k_results
-from src.common import keys_to_extract, rename_dictionary
+from src.collection.query_collection import get_top_k_results, filter_search
+from src.common import keys_to_extract
+from src.utils.call_openai_summarise import create_openai_summary
+from src.utils.utils import process_csv_file, process_txt_file
+
+from prompts.openai_summarise import system_prompt, user_prompt
 
 # get env vars
 COLLECTION_NAME = os.getenv("COLLECTION_NAME")
+OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
+FILTER_OPTIONS_PATH = os.getenv("FILTER_OPTIONS_PATH")
+HF_MODEL_NAME = os.getenv("HF_MODEL_NAME")
+QDRANT_HOST = os.getenv("QDRANT_HOST")
+QDRANT_PORT = os.getenv("QDRANT_PORT")
+
+# config
+similarity_score_threshold = 0.2
+max_context_records = 20
+min_records_for_summarisation = 5
+k = 1000000  # Setting k -> inf as placeholder
 
 st.set_page_config(layout="wide")
 
@@ -17,8 +33,8 @@ st.set_page_config(layout="wide")
 # Load the model only once, at the start of the app.
 # TODO: Replace with call to HF Inferece API or OpenAI API
 @st.cache_resource()
-def load_qdrant_client(port):
-    client = QdrantClient(os.getenv("QDRANT_HOST"), port=port)
+def load_qdrant_client():
+    client = QdrantClient(QDRANT_HOST, port=QDRANT_PORT)
     return client
 
 
@@ -29,39 +45,109 @@ def load_model(model_name):
     return model
 
 
-client = load_qdrant_client(6333)
-model = load_model("all-mpnet-base-v2")
+@st.cache_resource()
+def load_filter_dropdown_values(path_to_json):
+    with open(path_to_json, "r") as file:
+        data = json.load(file)
+    return data
 
-# Set any static variables for filtering retrieval
-filter_key = "subject_page_path"
+
+client = load_qdrant_client()
+model = load_model(HF_MODEL_NAME)
+filter_options = load_filter_dropdown_values(FILTER_OPTIONS_PATH)
 
 
 def main():
     # Sidebar
-    st.sidebar.header("Settings")
-    st.sidebar.write(
-        "This dashboard uses a Sentence Transformer model to encode a search term and queries a Qdrant collection to return the most relevant records."
+    st.sidebar.image("data/gds-1024x669.png", width=250)
+    st.sidebar.subheader(
+        "Feedback AI: Semantic Search and Summarisation\n", divider="blue"
     )
 
     # Main content area
-    st.title("Feedback AI Streamlit Dashboard Prototype")
-    st.subheader("Semantic Search of Feedback")
+    st.title("Feedback AI Tool")
+    st.subheader(
+        "This dashboard uses a large language model to perform semantic search and summarisation, returning the most relevant feedback records \
+            based on your input."
+    )
+    st.divider()
 
     # Free text box for one search term
-    # TODO: Enable batch search over a list of terms
-    search_term_input = st.sidebar.text_input("Enter one search term: \n (e.g. tax)")
+    search_term_input = st.sidebar.text_input(
+        "Enter a search term or phrase: \n (e.g. tax, Universal Credit, driving licence)"
+    )
     search_terms = search_term_input.strip().lower()
 
-    # Setting k -> inf as pLaceholder
-    k = 1000000
+    get_summary = st.sidebar.checkbox(
+        "Tick to get an AI-generated summary of relevant feedback"
+    )
+    st.sidebar.subheader("Feedback AI: Filter your search\n", divider="blue")
 
-    # Free text box for comma-separated list of subject pages.
-    page_path_input = st.sidebar.text_input(
-        "Enter optional subject page paths comma-separated: \n (e.g. /renew-medical-driving-licence)"
+    st.sidebar.write(
+        "Below are filters to refine your search. After choosing the appropriate filter values, hit 'Run Search...' to see the results."
     )
-    page_paths = (
-        [item.strip() for item in page_path_input.split(",")] if page_path_input else []
+
+    # List of all pages for dropdown and filtering
+    all_pages = filter_options["subject_page_path"]
+
+    user_input_pages = st.sidebar.multiselect(
+        "Select URL from drop-down (e.g. '/browse/tax'):",
+        all_pages,
+        # max_selections=4,
+        default=[],
     )
+
+    # File upload for list of URLs
+    uploaded_url_file = st.sidebar.file_uploader(
+        "Alternatively, upload a CSV of URLs to search", type=["txt", "csv"]
+    )
+
+    include_child_pages = st.sidebar.checkbox(
+        "Also include all child pages (e.g. 'browse/tax/...')?"
+    )
+
+    if uploaded_url_file is not None:
+        # Determine the file type and process accordingly
+        if uploaded_url_file.name.endswith(".txt"):
+            user_input_pages = process_txt_file(uploaded_url_file) + user_input_pages
+        elif uploaded_url_file.name.endswith(".csv"):
+            user_input_pages = process_csv_file(uploaded_url_file) + user_input_pages
+        else:
+            st.error("Unsupported file type. Please upload a .txt or .csv file.")
+            return
+
+    # Find all urls in filter_options["urls"] that start with urls in matched_page_paths
+    if user_input_pages and include_child_pages:
+        matched_page_paths = [
+            url
+            for url in all_pages
+            if url and any(url.startswith(path) for path in user_input_pages)
+        ]
+    elif not include_child_pages:
+        matched_page_paths = user_input_pages
+    else:
+        matched_page_paths = []
+
+    st.sidebar.divider()
+
+    urgency_input = st.sidebar.multiselect(
+        "Select urgency (Low:1, High:3, Unknown:-1):",
+        ["1", "2", "3", "-1"],
+        max_selections=4,
+    )
+
+    org_input = st.sidebar.multiselect(
+        "Select organisation:", filter_options["organisation"], default=[]
+    )
+
+    doc_type_input = st.sidebar.multiselect(
+        "Select document type:",
+        filter_options["document_type"],
+        default=[],
+    )
+
+    # convert to int if not None, else keep as None
+    urgency_input = [int(urgency) if urgency else None for urgency in urgency_input]
 
     # Date range slider in the sidebar.
     today = datetime.date.today()
@@ -83,49 +169,95 @@ def main():
 
     st.sidebar.write("Selected range:", start_date, "to", end_date)
 
-    if search_term_input:
-        print(f"search terms: {search_terms}")
-        query_embedding = model.encode(search_terms)
-        print(type(query_embedding), len(query_embedding))
-        # Call the search function with filters
-        search_results = get_top_k_results(
-            client=client,
-            collection_name=COLLECTION_NAME,
-            query_embedding=query_embedding,
-            k=k,
-            filter_key=filter_key,
-            filter_values=page_paths,
-        )
-        results = [dict(result) for result in search_results]
+    filter_dict = {
+        "url": matched_page_paths,
+        "urgency": urgency_input,
+        "department": org_input,
+        "document_type": doc_type_input,
+    }
+
+    if st.sidebar.button("Run Search..."):
+        if len(search_term_input) > 0:
+            st.write("Running semantic search...")
+            query_embedding = model.encode(search_terms)
+            # Call the search function with filters
+            search_results = get_top_k_results(
+                client=client,
+                collection_name=COLLECTION_NAME,
+                query_embedding=query_embedding,
+                k=k,
+                filter_dict=filter_dict,
+            )
+            results = [dict(result) for result in search_results]
+        elif len(search_term_input) == 0 and len(filter_dict["url"]) > 0:
+            st.write("Running filter search...")
+            # Call the filter function
+            search_results = filter_search(
+                client=client, collection_name=COLLECTION_NAME, filter_dict=filter_dict
+            )
+            data, _ = search_results
+            results = [dict(result) for result in data]
+        else:
+            st.write(
+                "Please supply a search term or terms and hit Apply Filters to see results..."
+            )
+            st.stop()
 
         filtered_list = []
         # Extract and append key-value pairs
         for result in results:
             payload = result["payload"]
-            for key in keys_to_extract:
-                if key in payload:  # Check if the key exists in the payload
+            for key in payload:
+                if key in keys_to_extract:  # Check if the key exists in keys_to_extract
                     result[key] = payload[key]
 
-            result = {key: result[key] for key in keys_to_extract}
-            result["payload"] = payload
-            result["created_date"] = datetime.datetime.strptime(
-                result["created"], "%Y-%m-%d"
+            result_ordered = {key: result[key] for key in keys_to_extract}
+            result_ordered["score"] = result["score"] if "score" in result else float(1)
+            result_ordered["payload"] = payload
+
+            result_ordered["created_date"] = datetime.datetime.strptime(
+                result_ordered["created"], "%Y-%m-%d"
             ).date()
 
-            # Rename keys
-            output = {
-                rename_dictionary[key]: result[key]
-                for key in rename_dictionary
-                if key in result
-            }
             # Filter on date
-            if start_date <= output["created_date"] <= end_date:
-                filtered_list.append(output)
+            if (
+                result_ordered["score"] > similarity_score_threshold
+                and start_date <= result_ordered["created_date"] <= end_date
+            ):
+                filtered_list.append(result_ordered)
 
-        st.write("Top k feedback records:")
+        st.write(f"{len(filtered_list)} relevant feedback records found...")
+
+        # Topic summary where > n records returned
+        # limiting to 20 records for context, to avoid token limits
+
+        if get_summary and len(filtered_list) > min_records_for_summarisation:
+            feedback_for_context = [record["feedback"] for record in filtered_list]
+            summary = create_openai_summary(
+                system_prompt,
+                user_prompt,
+                feedback_for_context[:max_context_records],
+                OPENAI_API_KEY,
+            )
+            st.write(
+                f"OpenAI Summary of relevant feedback based on {len(feedback_for_context)} records:"
+            )
+            st.write(summary["open_summary"])
+        elif get_summary and len(filtered_list) <= min_records_for_summarisation:
+            st.write(
+                "Insufficient feedback records for summarisation. Summarisation requires number of search results to be returned. \
+                    Try providing a longer date range and braoder search parameters."
+            )
+        elif not get_summary and len(filtered_list) > min_records_for_summarisation:
+            st.write(
+                "No summary requested. Check box to get an AI-generated summary of relevant feedback."
+            )
+        else:
+            st.write(
+                "No summary requested. Insufficient feedback records for summarisation."
+            )
+        st.success("Success! Relevant feedback records:")
         st.dataframe(filtered_list)
-    else:
-        st.write("Please supply a search term or terms")
 
 
 if __name__ == "__main__":

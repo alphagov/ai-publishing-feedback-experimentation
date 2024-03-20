@@ -2,7 +2,7 @@ from google.cloud import bigquery
 from google.api_core.exceptions import NotFound
 
 
-def query_bigquery(project_id: str, query: str):
+def query_bigquery(project_id: str, query: str, write_to_dict: bool = True):
     """Extracts feedback records from BigQuery
 
     Args:
@@ -29,7 +29,10 @@ def query_bigquery(project_id: str, query: str):
     # results = query_job.result()
 
     # Write to dict
-    result = [dict(row) for row in query_job]
+    if write_to_dict:
+        result = [dict(row) for row in query_job]
+    else:
+        result = query_job.result()
 
     return result
 

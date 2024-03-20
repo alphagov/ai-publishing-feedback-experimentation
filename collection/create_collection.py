@@ -15,9 +15,12 @@ PUBLISHING_PROJECT_ID = os.getenv("PUBLISHING_PROJECT_ID")
 LABELLED_FEEDBACK_TABLE = os.getenv("EVALUATION_TABLE")
 PUBLISHING_VIEW = os.getenv("PUBLISHING_VIEW")
 COLLECTION_NAME = os.getenv("COLLECTION_NAME")
+QDRANT_HOST = os.getenv("QDRANT_HOST")
+QDRANT_PORT = os.getenv("QDRANT_PORT")
+
 
 query_read = query_labelled_feedback.replace(
-    "@labelled_feedback_table", str(LABELLED_FEEDBACK_TABLE)
+    "@LABELLED_FEEDBACK_TABLE", str(LABELLED_FEEDBACK_TABLE)
 ).replace("@PUBLISHING_VIEW", str(PUBLISHING_VIEW))
 
 # Call the function to execute the query
@@ -26,7 +29,7 @@ docs = query_bigquery(
     query_read,
 )
 
-client = QdrantClient(os.getenv("QDRANT_HOST"), port=6333)
+client = QdrantClient(QDRANT_HOST, port=QDRANT_PORT)
 
 # Create collection
 create_collection(client, COLLECTION_NAME, size=768, distance_metric=Distance.DOT)
