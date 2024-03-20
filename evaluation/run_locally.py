@@ -4,6 +4,7 @@ from src.collection.evaluate_collection import (
     get_data_for_evaluation,
     load_qdrant_client,
     get_all_regex_counts,
+    get_all_regex_ids,
     assess_retrieval_accuracy,
     assess_scroll_retrieval,
 )
@@ -29,9 +30,9 @@ data = get_data_for_evaluation(
 )
 print("data retrieved")
 
-# Get the regex counts
+# Get the regex counts and ids
 regex_counts = get_all_regex_counts(data)
-print(f"length of regex counts: {regex_counts["application"]["n_matches"]}")
+regex_ids = get_all_regex_ids(data)
 print("regex counts retrieved")
 
 # Assess the retrieval accuracy
@@ -40,7 +41,7 @@ ss_results = assess_retrieval_accuracy(
     collection_name=COLLECTION_NAME,
     data=data,
     k_threshold=1000000,
-    regex_counts=regex_counts,
+    regex_ids=regex_ids,
 )
 print(f"Dot product search n results: {len(ss_results)}")
 
@@ -49,7 +50,6 @@ scroll_results = assess_scroll_retrieval(
     client=client,
     collection_name=COLLECTION_NAME,
     data=data,
-    regex_counts=regex_counts,
+    regex_ids=regex_ids,
 )
 print(f"Scroll n results: {len(scroll_results)}")
-print(f"Are scroll and ss results the same? {scroll_results == ss_results}")

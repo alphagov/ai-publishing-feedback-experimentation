@@ -37,7 +37,6 @@ def calculate_precision(retrieved_records: list, relevant_records: int) -> float
         float: Precision
     """
     true_positives = len(set(retrieved_records).intersection(relevant_records))
-    print(f"true_positives: {true_positives}")
     return true_positives / len(retrieved_records) if retrieved_records else 0
 
 
@@ -95,7 +94,7 @@ def calculate_f2_score(precision: dict, recall: int) -> float:
 def get_data_for_evaluation(
     evaluation_table: str,
     project_id: str,
-) -> dict:
+) -> List[dict]:
     """
     Query BQ for labelled feedback data. for use in evaluation.
 
@@ -115,7 +114,7 @@ def get_data_for_evaluation(
         project_id=project_id,
         query=query,
     )
-    return data  # TODO: Check if this is the correct return type
+    return data
 
 
 def get_all_labels(data: List[dict]) -> str:
@@ -189,12 +188,48 @@ def get_all_regex_counts(data: List[dict]) -> dict:
     return regex_counts  # Return dict
 
 
+def get_regex_ids(label: str, data: List[dict]) -> List[str]:
+    """
+    Given 1 label, use re.findall to get a list of IDs that match the label.
+
+    Args:
+        label (str): A unique label to search for.
+        data (List[dict]): The list of id, labels, and urgency.
+
+    Returns:
+        List[str]: The list of IDs that match the label.
+    """
+    ids = []
+    for record in data:
+        if re.search(label, record["labels"], flags=re.IGNORECASE):
+            ids.append(record["id"])
+    return ids
+
+
+def get_all_regex_ids(data: List[dict]) -> dict:
+    """
+    Get the regex IDs for all labels.
+
+    Args:
+        data (List[dict]): The list of id, labels, and urgency.
+
+    Returns:
+        List[dict]: The list of regex IDs.
+    """
+    unique_labels = get_unique_labels(data)  # Get list of unique labels
+    regex_ids = {}  # Initialise dict to store label and regex IDs
+    for unique_label in unique_labels:  # Loop through unique labels
+        ids = get_regex_ids(unique_label, data)  # Get regex IDs
+        regex_ids[unique_label] = ids  # Store in dict
+    return regex_ids  # Return dict
+
+
 def assess_retrieval_accuracy(
     client: QdrantClient,
     collection_name: str,
     data: List[dict],
     k_threshold: int,
-    regex_counts: dict,
+    regex_ids: dict,
 ) -> None:
     """
     Assess the retrieval accuracy of a collection by looping over all unique labels,
@@ -222,7 +257,7 @@ def assess_retrieval_accuracy(
     # Retrieve top K results for each label
     for unique_label in unique_labels:
         # Get the count of records from the regex counts
-        relevant_records = regex_counts[unique_label]["n_matches"]
+        relevant_records = regex_ids[unique_label]
 
         # Embed the label
         query_embedding = model.encode(unique_label)
@@ -239,7 +274,7 @@ def assess_retrieval_accuracy(
             print(f"get_top_k_results error: {e}")
             continue
 
-        result_ids = [result.id for result in results]
+        result_ids = [str(result.id) for result in results]
 
         # Calculate precision, recall, F1, & F2 score
         precision = calculate_precision(result_ids, relevant_records)
@@ -260,7 +295,7 @@ def assess_scroll_retrieval(
     client: QdrantClient,
     collection_name: str,
     data: List[dict],
-    regex_counts: dict,
+    regex_ids: dict,
 ):
     """
     Assess the retrieval accuracy of a collection by looping over all unique labels,
@@ -283,7 +318,7 @@ def assess_scroll_retrieval(
     # Retrieve K results for each label using Scroll
     for unique_label in unique_labels:
         # Get the count of records from the regex counts
-        relevant_records = regex_counts[unique_label]["n_matches"]
+        relevant_records = regex_ids[unique_label]
 
         # Use get_top_scroll_results to query the label
         search_results = filter_search(
@@ -297,7 +332,7 @@ def assess_scroll_retrieval(
         if _ is not None:
             print(f"Possible more scroll results: {_}")
 
-        result_ids = [result.id for result in results]
+        result_ids = [str(result.id) for result in results]
 
         # Calculate precision, recall, F1, & F2 score
         precision = calculate_precision(result_ids, relevant_records)
