@@ -1,4 +1,4 @@
-from src.collection.query_collection import get_top_k_results, get_top_scroll_results
+from src.collection.query_collection import get_top_k_results, filter_search
 from sentence_transformers import SentenceTransformer
 from typing import List
 from qdrant_client import QdrantClient
@@ -194,6 +194,7 @@ def assess_retrieval_accuracy(
     collection_name: str,
     data: List[dict],
     k_threshold: int,
+    regex_counts: dict,
 ) -> None:
     """
     Assess the retrieval accuracy of a collection by looping over all unique labels,
@@ -220,17 +221,12 @@ def assess_retrieval_accuracy(
 
     # Retrieve top K results for each label
     for unique_label in unique_labels:
-        # Calculate how many ids contain the label from labels["id"] and labels["labels"]
-        # TODO: Not sure if we want this or whether we can just use regex counts
-        relevant_records = [
-            int(label["id"]) for label in data if unique_label in label["labels"]
-        ]
-        print(unique_label)
-        print(model)
-        print(collection_name)
+        # Get the count of records from the regex counts
+        relevant_records = regex_counts[unique_label]["n_matches"]
+
         # Embed the label
         query_embedding = model.encode(unique_label)
-        print(f"embed len {len(query_embedding)}")
+
         # Retrieve the top K results for the label
         try:
             results = get_top_k_results(
@@ -238,17 +234,14 @@ def assess_retrieval_accuracy(
                 collection_name=collection_name,
                 query_embedding=query_embedding,
                 k=k_threshold,
-                # filter_key=[],
-                # filter_values=[],
             )
-            print(len(results))
         except Exception as e:
             print(f"get_top_k_results error: {e}")
             continue
 
         result_ids = [result.id for result in results]
 
-        # Calculate precision, recall, and F1 score using the functions defined above
+        # Calculate precision, recall, F1, & F2 score
         precision = calculate_precision(result_ids, relevant_records)
         recall = calculate_recall(result_ids, relevant_records)
         f1_score = calculate_f1_score(precision, recall)
@@ -267,6 +260,7 @@ def assess_scroll_retrieval(
     client: QdrantClient,
     collection_name: str,
     data: List[dict],
+    regex_counts: dict,
 ):
     """
     Assess the retrieval accuracy of a collection by looping over all unique labels,
@@ -286,14 +280,36 @@ def assess_scroll_retrieval(
     # Test using only unique labels[0]
     unique_labels = ["application"]
 
-    # Retrieve top K results for each label
+    # Retrieve K results for each label using Scroll
     for unique_label in unique_labels:
+        # Get the count of records from the regex counts
+        relevant_records = regex_counts[unique_label]["n_matches"]
+
         # Use get_top_scroll_results to query the label
-        results = get_top_scroll_results(
+        search_results = filter_search(
             client=client,
             collection_name=collection_name,
-            input_string=unique_label,
-            variable_of_interest="labels",
+            filter_dict={"labels": [unique_label]},
         )
 
-        return [result.id for result in results]
+        results, _ = search_results
+
+        if _ is not None:
+            print(f"Possible more scroll results: {_}")
+
+        result_ids = [result.id for result in results]
+
+        # Calculate precision, recall, F1, & F2 score
+        precision = calculate_precision(result_ids, relevant_records)
+        recall = calculate_recall(result_ids, relevant_records)
+        f1_score = calculate_f1_score(precision, recall)
+        f2_score = calculate_f2_score(precision, recall)
+
+        # Print the results
+        print(
+            f"Label: {unique_label}, Precision: {precision: .3f}, \
+            Recall: {recall: .3f}, F1 Score: {f1_score: .3f},   \
+            F2 Score: {f2_score: .3f}"
+        )
+
+        return result_ids

@@ -40,6 +40,7 @@ ss_results = assess_retrieval_accuracy(
     collection_name=COLLECTION_NAME,
     data=data,
     k_threshold=1000000,
+    regex_counts=regex_counts,
 )
 print(f"Dot product search n results: {len(ss_results)}")
 
@@ -48,6 +49,7 @@ scroll_results = assess_scroll_retrieval(
     client=client,
     collection_name=COLLECTION_NAME,
     data=data,
+    regex_counts=regex_counts,
 )
 print(f"Scroll n results: {len(scroll_results)}")
 print(f"Are scroll and ss results the same? {scroll_results == ss_results}")
