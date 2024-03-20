@@ -7,7 +7,7 @@ from qdrant_client import QdrantClient
 from sentence_transformers import SentenceTransformer
 
 from src.collection.query_collection import get_top_k_results, filter_search
-from src.common import keys_to_extract, urgency_translate
+from src.common import urgency_translate, renaming_dict
 from src.utils.call_openai_summarise import create_openai_summary
 from src.utils.utils import process_csv_file, process_txt_file
 
@@ -199,7 +199,7 @@ def main():
     filter_dict = {
         "url": matched_page_paths,
         "urgency": urgency_input,
-        "department": org_input,
+        "primary_department": org_input,
         "document_type": doc_type_input,
     }
 
@@ -234,15 +234,21 @@ def main():
         for result in results:
             payload = result["payload"]
             for key in payload:
-                if key in keys_to_extract:  # Check if the key exists in keys_to_extract
-                    result[key] = payload[key]
+                if key in renaming_dict:
+                    for (
+                        key,
+                        value,
+                    ) in (
+                        renaming_dict.items()
+                    ):  # Check if the key exists in keys_to_extract
+                        result[value] = payload[key]
 
-            result_ordered = {key: result[key] for key in keys_to_extract}
+            result_ordered = {key: result[key] for key in renaming_dict.values()}
             result_ordered["score"] = result["score"] if "score" in result else float(1)
-            result_ordered["payload"] = payload
+            # result_ordered["payload"] = payload
 
             result_ordered["created_date"] = datetime.datetime.strptime(
-                result_ordered["created"], "%Y-%m-%d"
+                result_ordered[renaming_dict["created"]], "%Y-%m-%d"
             ).date()
 
             # Filter on date
@@ -258,7 +264,9 @@ def main():
         # limiting to 20 records for context, to avoid token limits
 
         if get_summary and len(filtered_list) > min_records_for_summarisation:
-            feedback_for_context = [record["feedback"] for record in filtered_list]
+            feedback_for_context = [
+                record[renaming_dict["feedback"]] for record in filtered_list
+            ]
             summary = create_openai_summary(
                 system_prompt,
                 user_prompt,
