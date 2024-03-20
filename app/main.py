@@ -7,7 +7,7 @@ from qdrant_client import QdrantClient
 from sentence_transformers import SentenceTransformer
 
 from src.collection.query_collection import get_top_k_results, filter_search
-from src.common import keys_to_extract
+from src.common import keys_to_extract, urgency_translate
 from src.utils.call_openai_summarise import create_openai_summary
 from src.utils.utils import process_csv_file, process_txt_file
 
@@ -23,7 +23,7 @@ QDRANT_PORT = os.getenv("QDRANT_PORT")
 
 # config
 similarity_score_threshold = 0.2
-max_context_records = 20
+max_context_records = 30
 min_records_for_summarisation = 5
 k = 1000000  # Setting k -> inf as placeholder
 
@@ -58,26 +58,40 @@ filter_options = load_filter_dropdown_values(FILTER_OPTIONS_PATH)
 
 
 def main():
-    st.markdown(
-        "<style>" + open("app/style.css").read() + "</style>", unsafe_allow_html=True
+    # st.markdown(
+    #     "<style>" + open("app/style.css").read() + "</style>", unsafe_allow_html=True
+    # )
+
+    # Main content area
+    st.title("GOV.UK user feedback AI prototype")
+    st.write(
+        "Thank you for taking part in our user feedback AI research. This dashboard uses a large language model (LLM) to do semantic search and summarisation. \
+            It returns the most relevant feedback records and summaries based on what you've searched for.\n\
+                This is a technical prototype, it does not reflect how the end product would look and work, or where it would live in our Publishing Apps."
+    )
+    st.header("Explore user feedback")
+    st.write(
+        "Explore user feedback comments, including themes across topics and pages. \
+             This tool brings together feedback from users submitted via the \
+             'report a problem on this page' link and smart survey responses."
     )
 
     # Sidebar
-    st.sidebar.image("data/govuk-feedback.png", width=250)
-    st.sidebar.subheader(
-        "Use AI to summarise themes in user feedback\n", divider="blue"
-    )
+    st.sidebar.image("data/govuk-feedback.png")
+    st.sidebar.header("Explore themes in user feedback\n")
 
     st.sidebar.write(
         "Explore user feedback by topic, URL, urgency rathing, content type  and/or organisation, using AI to summarise themes\n"
     )
-    st.sidebar.divider()
-    # Main content area
-    st.title("Feedback AI Tool")
-    st.header(
-        "This dashboard uses a large language model to perform semantic search and summarisation, returning the most relevant feedback records \
-            based on your input."
+
+    st.sidebar.subheader("AI summarisation")
+
+    get_summary = st.sidebar.checkbox(
+        "Summarise relevant feedback",
+        value=True,
     )
+
+    st.sidebar.subheader("Set date range (optional)")
 
     # Date range slider in the sidebar.
     today = datetime.date.today()
@@ -97,43 +111,40 @@ def main():
     start_date = date_range[0]
     end_date = date_range[1]
 
+    st.sidebar.divider()
+
     # Free text box for one search term
+    st.sidebar.header("Explore by topic")
     search_term_input = st.sidebar.text_input(
-        "Search by topic, keyword or phrase.\n For example, tax, driving licence, Universal Credit"
+        "Enter a keyword or phrase.\n For example, tax, driving licence, Universal Credit"
     )
 
-    semantic_search_button = st.sidebar.button("See feedback by topic")
+    semantic_search_button = st.sidebar.button("Explore feedback by topic")
 
     search_terms = search_term_input.strip().lower()
 
-    get_summary = st.sidebar.checkbox(
-        "Summarise relevant feedback",
-        value=True,
-    )
-    st.sidebar.subheader("Refine your search\n", divider="blue")
+    st.sidebar.divider()
 
-    st.sidebar.write(
-        "Explore AI summarisation \n\nUse our AI user feedback assistant to identify themes and summarise user feedback across topics, sets of pages and single pages"
-    )
+    st.sidebar.header("Narrow your search\n")
+
+    st.sidebar.subheader("By URL(s)")
 
     # List of all pages for dropdown and filtering
     all_pages = filter_options["subject_page_path"]
 
     user_input_pages = st.sidebar.multiselect(
-        "Select URL from drop-down (e.g. '/browse/tax'):",
+        "Start typing and select the URL from dropdown\nFor example, /vat-rate or /browse/tax",
         all_pages,
         # max_selections=4,
         default=[],
     )
-    filter_search_button = st.sidebar.button("See feedback")
     # File upload for list of URLs
     uploaded_url_file = st.sidebar.file_uploader(
-        "Alternatively, upload a CSV of URLs to search", type=["txt", "csv"]
+        "Or bulk upload a list of URLs using a CSV or TXT file. Mac file limit 200MB per file",
+        type=["txt", "csv"],
     )
 
-    include_child_pages = st.sidebar.checkbox(
-        "Also include all child pages (e.g. 'browse/tax/...')?"
-    )
+    include_child_pages = True
 
     if uploaded_url_file is not None:
         # Determine the file type and process accordingly
@@ -157,23 +168,30 @@ def main():
     else:
         matched_page_paths = []
 
-    st.sidebar.divider()
+    st.sidebar.subheader("By urgency")
 
-    urgency_input = st.sidebar.multiselect(
-        "Select urgency (Low:1, High:3, Unknown:-1):",
-        ["1", "2", "3", "-1"],
+    urgency_user_input = st.sidebar.multiselect(
+        "See feedback by high, medium, low and unknown urgency rating.",
+        ["Low", "Medium", "High", "Unknown"],
         max_selections=4,
     )
 
+    # translate urgency rating to human readable
+    urgency_input = [urgency_translate[value] for value in urgency_user_input]
+
+    st.sidebar.subheader("By organisation")
     org_input = st.sidebar.multiselect(
         "Select organisation:", filter_options["organisation"], default=[]
     )
 
+    st.sidebar.subheader("By content type")
     doc_type_input = st.sidebar.multiselect(
-        "Select document type:",
+        "Select content type:",
         filter_options["document_type"],
         default=[],
     )
+
+    filter_search_button = st.sidebar.button("Explore feedback")
 
     # convert to int if not None, else keep as None
     urgency_input = [int(urgency) if urgency else None for urgency in urgency_input]
@@ -187,7 +205,6 @@ def main():
 
     if any([filter_search_button, semantic_search_button]):
         if len(search_term_input) > 0:
-            st.write("Running semantic search...")
             query_embedding = model.encode(search_terms)
             # Call the search function with filters
             search_results = get_top_k_results(
@@ -248,14 +265,17 @@ def main():
                 feedback_for_context[:max_context_records],
                 OPENAI_API_KEY,
             )
+            st.subheader(
+                f"Top themes based on {len(feedback_for_context)} records of user feedback"
+            )
             st.write(
-                f"OpenAI Summary of relevant feedback based on {len(feedback_for_context)} records:"
+                "Identified and summarised by AI technology. Please verify the outputs with other data sources to ensure accuracy of information."
             )
             st.write(summary["open_summary"])
         elif get_summary and len(filtered_list) <= min_records_for_summarisation:
             st.write(
-                "Insufficient feedback records for summarisation. Summarisation requires number of search results to be returned. \
-                    Try providing a longer date range and braoder search parameters."
+                "There's not enough feedback matching your search criteria to identify top themes.\n\
+                Try searching with fewer criteria or across more URLs to increase the likelihood of results."
             )
         elif not get_summary and len(filtered_list) > min_records_for_summarisation:
             st.write(
@@ -265,7 +285,7 @@ def main():
             st.write(
                 "No summary requested. Insufficient feedback records for summarisation."
             )
-        st.success("Success! Relevant feedback records:")
+        st.subheader("All user feedback comments based on your search criteria")
         st.dataframe(filtered_list)
 
 
