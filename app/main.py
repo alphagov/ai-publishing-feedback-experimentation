@@ -52,23 +52,29 @@ def load_filter_dropdown_values(path_to_json):
     return data
 
 
+@st.cache_resource()
+def read_html_file(file_path: str) -> str:
+    with open(file_path, "r", encoding="utf-8") as file:
+        return file.read()
+
+
 client = load_qdrant_client()
 model = load_model(HF_MODEL_NAME)
 filter_options = load_filter_dropdown_values(FILTER_OPTIONS_PATH)
 
 
 def main():
-    # st.markdown(
-    #     "<style>" + open("app/style.css").read() + "</style>", unsafe_allow_html=True
-    # )
+    # Create a container for the banner
+    with st.container():
+        # Use markdown with inline CSS/HTML
+
+        # html_content = read_html_file('app/banner.html')
+        # st.markdown(html_content, unsafe_allow_html=True)
+        with open("app/banner.html", "r", encoding="utf-8") as file:
+            html_content = file.read()
+            st.markdown(html_content, unsafe_allow_html=True)
 
     # Main content area
-    st.title("GOV.UK user feedback AI prototype")
-    st.write(
-        "Thank you for taking part in our user feedback AI research. This dashboard uses a large language model (LLM) to do semantic search and summarisation. \
-            It returns the most relevant feedback records and summaries based on what you've searched for.\n\
-                This is a technical prototype, it does not reflect how the end product would look and work, or where it would live in our Publishing Apps."
-    )
     st.header("Explore user feedback")
     st.write(
         "Explore user feedback comments, including themes across topics and pages. \
@@ -95,21 +101,14 @@ def main():
 
     # Date range slider in the sidebar.
     today = datetime.date.today()
-    user_start_date = today - datetime.timedelta(
-        days=90
-    )  # Start date X days ago from today.
-    user_end_date = today  # End date as today.
 
-    date_range = st.sidebar.slider(
-        "Select date range:",
-        min_value=user_start_date,
-        max_value=user_end_date,
-        value=(user_start_date, user_end_date),
-        format="DD/MM/YYYY",
-    )
-
-    start_date = date_range[0]
-    end_date = date_range[1]
+    col1, col2 = st.sidebar.columns(2)
+    with col1:
+        start_date = st.date_input(
+            "Start date:", today - datetime.timedelta(days=90), format="DD/MM/YYYY"
+        )
+    with col2:
+        end_date = st.date_input("End date:", today, format="DD/MM/YYYY")
 
     st.sidebar.divider()
 
@@ -171,7 +170,7 @@ def main():
     st.sidebar.subheader("By urgency")
 
     urgency_user_input = st.sidebar.multiselect(
-        "See feedback by high, medium, low and unknown urgency rating.",
+        "See feedback by high, medium, low and unknown urgency rating.\nUrgency has been inferred by AI.",
         ["Low", "Medium", "High", "Unknown"],
         max_selections=4,
     )
@@ -179,9 +178,9 @@ def main():
     # translate urgency rating to human readable
     urgency_input = [urgency_translate[value] for value in urgency_user_input]
 
-    st.sidebar.subheader("By organisation")
+    st.sidebar.subheader("By publishing organisation")
     org_input = st.sidebar.multiselect(
-        "Select organisation:", filter_options["organisation"], default=[]
+        "Select publishing organisation:", filter_options["organisation"], default=[]
     )
 
     st.sidebar.subheader("By content type")
@@ -193,6 +192,13 @@ def main():
 
     filter_search_button = st.sidebar.button("Explore feedback")
 
+    st.sidebar.divider()
+
+    st.sidebar.write(
+        "Similarity score is calculated by an AI model. \
+                     The higher the score, the more similar the feedback \
+                     content is to the search term or phrase."
+    )
     # convert to int if not None, else keep as None
     urgency_input = [int(urgency) if urgency else None for urgency in urgency_input]
 
@@ -244,7 +250,9 @@ def main():
                         result[value] = payload[key]
 
             result_ordered = {key: result[key] for key in renaming_dict.values()}
-            result_ordered["score"] = result["score"] if "score" in result else float(1)
+            result_ordered["Similarity score"] = (
+                result["score"] if "score" in result else float(1)
+            )
             # result_ordered["payload"] = payload
 
             result_ordered["created_date"] = datetime.datetime.strptime(
@@ -253,12 +261,15 @@ def main():
 
             # Filter on date
             if (
-                result_ordered["score"] > similarity_score_threshold
+                result_ordered["Similarity score"] > similarity_score_threshold
                 and start_date <= result_ordered["created_date"] <= end_date
             ):
+                result_ordered.pop("created_date")
                 filtered_list.append(result_ordered)
 
-        st.write(f"{len(filtered_list)} relevant feedback records found...")
+        st.write(
+            f"{len(filtered_list)} relevant feedback comments found for your search:"
+        )
 
         # Topic summary where > n records returned
         # limiting to 20 records for context, to avoid token limits
@@ -294,7 +305,15 @@ def main():
                 "No summary requested. Insufficient feedback records for summarisation."
             )
         st.subheader("All user feedback comments based on your search criteria")
-        st.dataframe(filtered_list)
+        st.dataframe(
+            filtered_list,
+            column_config={
+                "Date": st.column_config.DateColumn(
+                    "Date",
+                    format="DD/MM/YYYY",
+                ),
+            },
+        )
 
 
 if __name__ == "__main__":
