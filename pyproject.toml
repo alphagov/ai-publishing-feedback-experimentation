@@ -18,7 +18,7 @@ openai = "^1.13.3"
 
 
 [tool.poetry.group.dev.dependencies]
-black = {extras = ["jupyter"], version = "^24.2.0"}
+black = {extras = ["jupyter"], version = "^24.3.0"}
 flake8 = "^7.0.0"
 pytest = "^8.0.2"
 nbstripout = "^0.7.1"
