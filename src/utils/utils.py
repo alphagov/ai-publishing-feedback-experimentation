@@ -1,6 +1,28 @@
 import csv
 import json
 
+from qdrant_client import QdrantClient
+from sentence_transformers import SentenceTransformer
+
+
+def load_qdrant_client(qdrant_host: str, port: int) -> QdrantClient:
+    client = QdrantClient(qdrant_host, port=port)
+    return client
+
+
+def load_model(model_name: str) -> SentenceTransformer:
+    """
+    Load the SentenceTransformer model.
+
+    Args:
+        model_name (str): The name of the model.
+
+    Returns:
+        SentenceTransformer: The loaded model.
+    """
+    model = SentenceTransformer(model_name)
+    return model
+
 
 def jsonify_data(records: list, labelled=False):
     """

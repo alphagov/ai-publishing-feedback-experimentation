@@ -1,28 +1,12 @@
-from src.collection.query_collection import get_top_k_results, filter_search
-from sentence_transformers import SentenceTransformer
 from typing import List
-from qdrant_client import QdrantClient
-from src.utils.bigquery import query_bigquery
+
 import regex as re
+from qdrant_client import QdrantClient
 
-
-def load_qdrant_client(qdrant_host: str, port: int) -> QdrantClient:
-    client = QdrantClient(qdrant_host, port=port)
-    return client
-
-
-def load_model(model_name: str) -> SentenceTransformer:
-    """
-    Load the SentenceTransformer model.
-
-    Args:
-        model_name (str): The name of the model.
-
-    Returns:
-        SentenceTransformer: The loaded model.
-    """
-    model = SentenceTransformer(model_name)
-    return model
+from src.collection.query_collection import filter_search, get_top_k_results
+from src.sql_queries import query_evaluation_data
+from src.utils.bigquery import query_bigquery
+from src.utils.utils import load_model
 
 
 def calculate_precision(retrieved_records: list, relevant_records: int) -> float:
@@ -98,18 +82,14 @@ def get_data_for_evaluation(
     """
     Query BQ for labelled feedback data. for use in evaluation.
 
+    Args:
+        evaluation_table (str): The name of the evaluation table.
+        project_id (str): The project ID.
+
     Returns:
         list(dict): Feedback data IDs and labels
     """
-    query = """
-    SELECT
-        id,
-        ARRAY_TO_STRING(labels, ", ") as labels,
-        urgency
-    FROM
-        @evaluation_table
-    """
-    query = query.replace("@evaluation_table", evaluation_table)
+    query = query_evaluation_data.replace("@EVALUATION_TABLE", evaluation_table)
     data = query_bigquery(
         project_id=project_id,
         query=query,
@@ -240,9 +220,10 @@ def assess_retrieval_accuracy(
         collection_name (str): The name of the collection.
         data (List[dict]): The list of id, labels, and urgency.
         k_threshold (int): The threshold for retrieving top K results.
+        regex_ids (dict): The dictionary of regex IDs.
 
     Returns:
-        None
+        :List[str]: The list of result IDs.
     """
 
     # Load the model once
@@ -305,9 +286,10 @@ def assess_scroll_retrieval(
         client (Any): The client object.
         collection_name (str): The name of the collection.
         data (List[dict]): The list of id, labels, and urgency.
+        regex_ids (dict): The dictionary of regex IDs.
 
     Returns:
-        None
+        :List[str]: The list of result IDs.
     """
     # Get unique labels
     unique_labels = get_unique_labels(data)

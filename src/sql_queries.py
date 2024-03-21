@@ -39,3 +39,12 @@ SELECT DISTINCT organisation FROM @PUBLISHING_VIEW, UNNEST(organisation) as orga
 query_distinct_doc_type = """
 SELECT DISTINCT document_type FROM @PUBLISHING_VIEW
 """
+
+query_evaluation_data = """
+    SELECT
+        id,
+        ARRAY_TO_STRING(labels, ", ") as labels,
+        urgency
+    FROM
+        @EVALUATION_TABLE
+    """
