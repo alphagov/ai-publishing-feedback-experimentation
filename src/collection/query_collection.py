@@ -2,8 +2,12 @@ from qdrant_client import QdrantClient
 from qdrant_client.http.models import FieldCondition, Filter, MatchAny
 
 
-def get_top_k_results(
-    client: QdrantClient, collection_name: str, query_embedding, k: int, filter_dict={}
+def get_semantically_similar_results(
+    client: QdrantClient,
+    collection_name: str,
+    query_embedding,
+    score_threshold: float,
+    filter_dict={},
 ):
     """Retrieve top k results from collection
 
@@ -11,6 +15,7 @@ def get_top_k_results(
         client (QdrantClient): The  Qdrant client.
         collection_name (str): The name of the collection.
         query_embedding (list): The query vector.
+        score_threshold (float): The minimum score to return.
         filter_dict (dict, optional): The keys and values to filter on. Defaults to {}.
 
     Returns:
@@ -31,11 +36,13 @@ def get_top_k_results(
             collection_name=collection_name,
             query_vector=query_embedding,
             query_filter=filter,
-            limit=k,
+            score_threshold=score_threshold,
         )
     else:
         search_result = client.search(
-            collection_name=collection_name, query_vector=query_embedding, limit=k
+            collection_name=collection_name,
+            query_vector=query_embedding,
+            score_threshold=score_threshold,
         )
 
     return search_result

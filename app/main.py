@@ -6,7 +6,10 @@ import streamlit as st
 from qdrant_client import QdrantClient
 from sentence_transformers import SentenceTransformer
 
-from src.collection.query_collection import get_top_k_results, filter_search
+from src.collection.query_collection import (
+    get_semantically_similar_results,
+    filter_search,
+)
 from src.common import urgency_translate, renaming_dict
 from src.utils.call_openai_summarise import create_openai_summary
 from src.utils.utils import process_csv_file, process_txt_file
@@ -20,12 +23,6 @@ FILTER_OPTIONS_PATH = os.getenv("FILTER_OPTIONS_PATH")
 HF_MODEL_NAME = os.getenv("HF_MODEL_NAME")
 QDRANT_HOST = os.getenv("QDRANT_HOST")
 QDRANT_PORT = os.getenv("QDRANT_PORT")
-
-# config
-similarity_score_threshold = 0.2
-max_context_records = 30
-min_records_for_summarisation = 5
-k = 1000000  # Setting k -> inf as placeholder
 
 st.set_page_config(layout="wide")
 
@@ -58,9 +55,21 @@ def read_html_file(file_path: str) -> str:
         return file.read()
 
 
+@st.cache_resource()
+def load_config(config_file_path):
+    with open(config_file_path, "r") as file:
+        config = json.load(file)
+    return config
+
+
 client = load_qdrant_client()
 model = load_model(HF_MODEL_NAME)
 filter_options = load_filter_dropdown_values(FILTER_OPTIONS_PATH)
+
+config = load_config(".config/config.json")
+similarity_threshold = config.get("dot_product_threshold_1")
+max_context_records = config.get("dot_product_threshold_1")
+min_records_for_summarisation = config.get("min_records_for_summarisation")
 
 
 def main():
@@ -213,11 +222,11 @@ def main():
         if len(search_term_input) > 0:
             query_embedding = model.encode(search_terms)
             # Call the search function with filters
-            search_results = get_top_k_results(
+            search_results = get_semantically_similar_results(
                 client=client,
                 collection_name=COLLECTION_NAME,
                 query_embedding=query_embedding,
-                k=k,
+                score_threshold=similarity_threshold,
                 filter_dict=filter_dict,
             )
             results = [dict(result) for result in search_results]
@@ -261,7 +270,7 @@ def main():
 
             # Filter on date
             if (
-                result_ordered["Similarity score"] > similarity_score_threshold
+                result_ordered["Similarity score"] > similarity_threshold
                 and start_date <= result_ordered["created_date"] <= end_date
             ):
                 result_ordered.pop("created_date")
