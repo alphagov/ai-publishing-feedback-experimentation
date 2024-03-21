@@ -35,19 +35,19 @@ services:
       - QDRANT_HOST=qdrant
       - GOOGLE_APPLICATION_CREDENTIALS=/root/.config/gcloud/application_default_credentials.json
 
-  # streamlit_app:
-  #   build:
-  #     context: .
-  #     dockerfile: ./app/Containerfile
-  #   ports:
-  #     - "8501:8501" # Expose the default Streamlit port
-  #   env_file:
-  #     - path: ./docker-compose.env
-  #   environment:
-  #     - QDRANT_HOST=qdrant # Use the service name as the hostname for inter-service communication
-  #   depends_on:
-  #     - qdrant
-  #     - init_script
+  streamlit_app:
+    build:
+      context: .
+      dockerfile: ./app/Containerfile
+    ports:
+      - "8501:8501" # Expose the default Streamlit port
+    env_file:
+      - path: ./docker-compose.env
+    environment:
+      - QDRANT_HOST=qdrant # Use the service name as the hostname for inter-service communication
+    depends_on:
+      - qdrant
+      - init_script
 
   eval:
     build:

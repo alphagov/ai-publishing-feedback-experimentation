@@ -9,10 +9,6 @@ from src.collection.evaluate_collection import (
     assess_scroll_retrieval,
 )
 
-from dotenv import load_dotenv
-
-load_dotenv()
-
 # Get env vars
 PUBLISHING_PROJECT_ID = os.getenv("PUBLISHING_PROJECT_ID")
 EVALUATION_TABLE = os.getenv("EVALUATION_TABLE")
