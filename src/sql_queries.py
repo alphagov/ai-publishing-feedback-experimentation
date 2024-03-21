@@ -25,7 +25,6 @@ JOIN @LABELLED_FEEDBACK_TABLE labels
   ON CAST(feedback.feedback_record_id AS INT)=CAST(labels.id AS INT)
 WHERE feedback.created > DATE("2023-08-01")
 AND document_type != "special route"
-LIMIT 1500
 """
 
 
@@ -40,4 +39,3 @@ SELECT DISTINCT organisation FROM @PUBLISHING_VIEW, UNNEST(organisation) as orga
 query_distinct_doc_type = """
 SELECT DISTINCT document_type FROM @PUBLISHING_VIEW
 """
-

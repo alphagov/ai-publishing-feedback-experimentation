@@ -68,8 +68,20 @@ def upsert_to_collection_from_vectors(
         collection_name (str): name of collection
         data (list[PointStruct]): vectors to upsert
     """
-    print(f"Upserting {len(data)} points to collection {collection_name}...")
-    operation_info = client.upsert(
-        collection_name=collection_name, wait=True, points=data
-    )
-    print(operation_info)
+
+    def _chunk_data(data, chunk_size=100):
+        """Chunk data into smaller pieces for upsertion"""
+        for i in range(0, len(data), chunk_size):
+            yield data[i : i + chunk_size]
+
+    chunk_size = 500
+
+    for chunk in _chunk_data(data, chunk_size=chunk_size):
+        print(f"Upserting {len(chunk)} points to collection {collection_name}...")
+        try:
+            operation_info = client.upsert(
+                collection_name=collection_name, wait=True, points=chunk
+            )
+            print(operation_info)
+        except Exception as e:
+            print(f"Error upserting to collection {collection_name}: {e}")
