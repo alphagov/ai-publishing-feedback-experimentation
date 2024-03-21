@@ -13,10 +13,11 @@ from src.collection.evaluate_collection import (
 PUBLISHING_PROJECT_ID = os.getenv("PUBLISHING_PROJECT_ID")
 EVALUATION_TABLE = os.getenv("EVALUATION_TABLE")
 QDRANT_HOST = os.getenv("QDRANT_HOST")
+QDRANT_PORT = os.getenv("QDRANT_PORT")
 COLLECTION_NAME = os.getenv("COLLECTION_NAME")
 
 # Initialize a Qdrant client <- want to call our local client
-client = load_qdrant_client(qdrant_host="localhost", port=6333)
+client = load_qdrant_client(qdrant_host="localhost", port=QDRANT_PORT)
 print("client initiated")
 
 # Get the data for evaluation <- still needs to be done

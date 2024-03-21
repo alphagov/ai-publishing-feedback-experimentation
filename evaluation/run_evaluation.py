@@ -10,12 +10,13 @@ from src.collection.evaluate_collection import (
 PUBLISHING_PROJECT_ID = os.getenv("PUBLISHING_PROJECT_ID")
 EVALUATION_TABLE = os.getenv("EVALUATION_TABLE")
 QDRANT_HOST = os.getenv("QDRANT_HOST")
+QDRANT_PORT = os.getenv("QDRANT_PORT")
 COLLECTION_NAME = os.getenv("COLLECTION_NAME")
 
 
 def main():
     # Initialize a Qdrant client
-    client = load_qdrant_client(QDRANT_HOST, port=6333)
+    client = load_qdrant_client(QDRANT_HOST, port=QDRANT_PORT)
 
     # Get the data for evaluation
     data = get_data_for_evaluation(
