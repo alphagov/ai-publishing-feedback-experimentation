@@ -3,7 +3,10 @@ from typing import List
 import regex as re
 from qdrant_client import QdrantClient
 
-from src.collection.query_collection import filter_search, get_top_k_results
+from src.collection.query_collection import (
+    filter_search,
+    get_semantically_similar_results,
+)
 from src.sql_queries import query_evaluation_data
 from src.utils.bigquery import query_bigquery
 from src.utils.utils import load_model
@@ -207,8 +210,9 @@ def get_all_regex_ids(data: List[dict]) -> dict:
 def assess_retrieval_accuracy(
     client: QdrantClient,
     collection_name: str,
+    model_name: str,
     data: List[dict],
-    k_threshold: int,
+    score_threshold: float,
     regex_ids: dict,
 ) -> None:
     """
@@ -227,7 +231,7 @@ def assess_retrieval_accuracy(
     """
 
     # Load the model once
-    model = load_model("all-mpnet-base-v2")
+    model = load_model(model_name)
 
     # Get unique labels
     unique_labels = get_unique_labels(data)
@@ -245,14 +249,14 @@ def assess_retrieval_accuracy(
 
         # Retrieve the top K results for the label
         try:
-            results = get_top_k_results(
+            results = get_semantically_similar_results(
                 client=client,
                 collection_name=collection_name,
                 query_embedding=query_embedding,
-                k=k_threshold,
+                score_threshold=score_threshold,
             )
         except Exception as e:
-            print(f"get_top_k_results error: {e}")
+            print(f"get_semantically_similar_results error: {e}")
             continue
 
         result_ids = [str(result.id) for result in results]

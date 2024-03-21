@@ -5,6 +5,25 @@ from qdrant_client import QdrantClient
 from sentence_transformers import SentenceTransformer
 
 
+def load_config(config_file_path):
+    """
+    Load configuration variables from a JSON file.
+
+    Args:
+        config_file_path (str): The file path to the configuration file.
+
+    Returns:
+        dict: A dictionary containing the configuration variables.
+
+    Raises:
+        FileNotFoundError: If the specified file does not exist.
+        json.JSONDecodeError: If the file is not a valid JSON.
+    """
+    with open(config_file_path, "r") as file:
+        config = json.load(file)
+    return config
+
+
 def load_qdrant_client(qdrant_host: str, port: int) -> QdrantClient:
     client = QdrantClient(qdrant_host, port=port)
     return client
