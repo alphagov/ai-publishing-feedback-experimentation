@@ -1,13 +1,13 @@
 import os
 
 from src.collection.evaluate_collection import (
-    get_data_for_evaluation,
-    load_qdrant_client,
-    get_all_regex_counts,
-    get_all_regex_ids,
     assess_retrieval_accuracy,
     assess_scroll_retrieval,
+    get_all_regex_counts,
+    get_all_regex_ids,
+    get_data_for_evaluation,
 )
+from src.utils.utils import load_config, load_qdrant_client
 
 # Get env vars
 PUBLISHING_PROJECT_ID = os.getenv("PUBLISHING_PROJECT_ID")
@@ -15,9 +15,14 @@ EVALUATION_TABLE = os.getenv("EVALUATION_TABLE")
 QDRANT_HOST = os.getenv("QDRANT_HOST")
 QDRANT_PORT = os.getenv("QDRANT_PORT")
 EVAL_COLLECTION_NAME = os.getenv("EVAL_COLLECTION_NAME")
+HF_MODEL_NAME = os.getenv("HF_MODEL_NAME")
+
+config = load_config(".config/config.json")
+similarity_threshold = float(config.get("dot_product_threshold_1"))
+print(f"Similarity threshold: {similarity_threshold}")
 
 # Initialize a Qdrant client <- want to call our local client
-client = load_qdrant_client(qdrant_host="localhost", port=QDRANT_PORT)
+client = load_qdrant_client(QDRANT_HOST, port=QDRANT_PORT)
 print("client initiated")
 
 # Get the data for evaluation <- still needs to be done
@@ -36,9 +41,10 @@ print("regex counts retrieved")
 ss_results = assess_retrieval_accuracy(
     client=client,
     collection_name=EVAL_COLLECTION_NAME,
+    model_name=HF_MODEL_NAME,
     data=data,
-    k_threshold=1000000,
     regex_ids=regex_ids,
+    score_threshold=similarity_threshold,
 )
 print(f"Dot product search n results: {len(ss_results)}")
 
