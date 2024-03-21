@@ -67,9 +67,9 @@ model = load_model(HF_MODEL_NAME)
 filter_options = load_filter_dropdown_values(FILTER_OPTIONS_PATH)
 
 config = load_config(".config/config.json")
-similarity_threshold = config.get("dot_product_threshold_1")
-max_context_records = config.get("dot_product_threshold_1")
-min_records_for_summarisation = config.get("min_records_for_summarisation")
+similarity_threshold = float(config.get("dot_product_threshold_1"))
+max_context_records = int(config.get("dot_product_threshold_1"))
+min_records_for_summarisation = int(config.get("min_records_for_summarisation"))
 
 
 def main():
