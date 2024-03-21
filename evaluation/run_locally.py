@@ -14,7 +14,7 @@ PUBLISHING_PROJECT_ID = os.getenv("PUBLISHING_PROJECT_ID")
 EVALUATION_TABLE = os.getenv("EVALUATION_TABLE")
 QDRANT_HOST = os.getenv("QDRANT_HOST")
 QDRANT_PORT = os.getenv("QDRANT_PORT")
-COLLECTION_NAME = os.getenv("COLLECTION_NAME")
+EVAL_COLLECTION_NAME = os.getenv("EVAL_COLLECTION_NAME")
 
 # Initialize a Qdrant client <- want to call our local client
 client = load_qdrant_client(qdrant_host="localhost", port=QDRANT_PORT)
@@ -35,7 +35,7 @@ print("regex counts retrieved")
 # Assess the retrieval accuracy
 ss_results = assess_retrieval_accuracy(
     client=client,
-    collection_name=COLLECTION_NAME,
+    collection_name=EVAL_COLLECTION_NAME,
     data=data,
     k_threshold=1000000,
     regex_ids=regex_ids,
@@ -45,7 +45,7 @@ print(f"Dot product search n results: {len(ss_results)}")
 # Assess the scroll retrieval
 scroll_results = assess_scroll_retrieval(
     client=client,
-    collection_name=COLLECTION_NAME,
+    collection_name=EVAL_COLLECTION_NAME,
     data=data,
     regex_ids=regex_ids,
 )
