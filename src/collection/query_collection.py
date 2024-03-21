@@ -30,7 +30,7 @@ def get_top_k_results(
         search_result = client.search(
             collection_name=collection_name,
             query_vector=query_embedding,
-            # query_filter=filter,
+            query_filter=filter,
             limit=k,
         )
     else:
