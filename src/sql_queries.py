@@ -51,6 +51,14 @@ FROM
 """
 
 query_all_feedback = """
+WITH CTE AS (
+  SELECT feedback_record_id,
+  STRING_AGG(response_value, ', ') AS response_value_full
+FROM
+  `govuk-ai-publishing.joined_feedback_view.feedback_6mth_with_metadata_updated`
+GROUP BY
+  feedback_record_id
+)
 SELECT
     feedback.type as feedback_type,
     DATE(feedback.created) AS created,
@@ -58,6 +66,7 @@ SELECT
     CONCAT('https://www.gov.uk', feedback.subject_page_path) AS full_url,
     CAST(feedback.feedback_record_id AS STRING) AS feedback_record_id,
     feedback.response_value as feedback,
+    cte.response_value_full as feedback_full,
     CAST(ROUND(RAND() * 3) as INT64) as urgency,
     feedback.organisation as department,
     feedback.primary_organisation as primary_department,
@@ -70,8 +79,11 @@ SELECT
     feedback.locale,
     feedback.title as page_title,
     feedback.taxons
-FROM @PUBLISHING_VIEW feedback
+FROM `govuk-ai-publishing.joined_feedback_view.feedback_6mth_with_metadata_updated` feedback
+JOIN CTE
+ON feedback.feedback_record_id=CTE.feedback_record_id
 WHERE feedback.created > DATE("2023-08-01")
 AND feedback.document_type != "special route"
 ORDER BY feedback_record_id
+LIMIT 10000
 """
