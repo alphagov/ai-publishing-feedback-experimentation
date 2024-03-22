@@ -47,7 +47,7 @@ client = load_qdrant_client(QDRANT_HOST, port=QDRANT_PORT)
 # Create feedback and eval collections
 for name, docs in [(COLLECTION_NAME, feedback_docs), (EVAL_COLLECTION_NAME, eval_docs)]:
     print(f"Creating collection {name} with {len(docs)} documents...")
-    create_collection(client, name, size=768, distance_metric=Distance.DOT)
+    create_collection(client, name, size=768, distance_metric=Distance.COSINE)
     print(f"number of docs: {len(docs)}")
 
     # Convert data into PointStructs for upsertion
