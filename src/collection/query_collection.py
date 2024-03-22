@@ -37,12 +37,14 @@ def get_semantically_similar_results(
             query_vector=query_embedding,
             query_filter=filter,
             score_threshold=score_threshold,
+            limit=10000000,
         )
     else:
         search_result = client.search(
             collection_name=collection_name,
             query_vector=query_embedding,
             score_threshold=score_threshold,
+            limit=10000000,
         )
 
     return search_result

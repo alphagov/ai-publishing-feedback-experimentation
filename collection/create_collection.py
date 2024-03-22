@@ -28,6 +28,8 @@ eval_query_read = query_labelled_feedback.replace(
     "@LABELLED_FEEDBACK_TABLE", str(LABELLED_FEEDBACK_TABLE)
 ).replace("@PUBLISHING_VIEW", str(PUBLISHING_VIEW))
 
+print("Reading data from BigQuery...")
+
 # Call the function to get all feedback
 feedback_docs = query_bigquery(
     PUBLISHING_PROJECT_ID,

@@ -68,7 +68,7 @@ filter_options = load_filter_dropdown_values(FILTER_OPTIONS_PATH)
 
 config = load_config(".config/config.json")
 similarity_threshold = float(config.get("dot_product_threshold_1"))
-max_context_records = int(config.get("dot_product_threshold_1"))
+max_context_records = int(config.get("max_context_records"))
 min_records_for_summarisation = int(config.get("min_records_for_summarisation"))
 
 
@@ -222,6 +222,7 @@ def main():
         if len(search_term_input) > 0:
             query_embedding = model.encode(search_terms)
             # Call the search function with filters
+            print("Running semantic search on {COLLECTION_NAME}...")
             search_results = get_semantically_similar_results(
                 client=client,
                 collection_name=COLLECTION_NAME,
@@ -260,7 +261,7 @@ def main():
 
             result_ordered = {key: result[key] for key in renaming_dict.values()}
             result_ordered["Similarity score"] = (
-                result["score"] if "score" in result else float(1)
+                result["score"] if "score" in result else float("NaN")
             )
             # result_ordered["payload"] = payload
 
