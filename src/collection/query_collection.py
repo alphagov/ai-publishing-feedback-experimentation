@@ -70,7 +70,9 @@ def filter_search(client: QdrantClient, collection_name: str, filter_dict: dict)
     )
     if len(filter_dict) > 0:
         search_result = client.scroll(
-            collection_name=collection_name, scroll_filter=filter
+            collection_name=collection_name,
+            scroll_filter=filter,
+            limit=10000000,
         )
         return search_result
     else:
