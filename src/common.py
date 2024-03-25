@@ -17,7 +17,7 @@ keys_to_extract = [
 renaming_dict = {
     "created": "Date",
     "feedback": "Feedback comment",
-    "feedback_full": "Feedback comment with associated comments",
+    # "feedback_full": "Feedback comment with associated comments",
     "url": "URL",
     "page_title": "Page title",
     "urgency": "Urgency",

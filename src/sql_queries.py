@@ -65,8 +65,7 @@ SELECT
     feedback.subject_page_path as url,
     CONCAT('https://www.gov.uk', feedback.subject_page_path) AS full_url,
     CAST(feedback.feedback_record_id AS STRING) AS feedback_record_id,
-    feedback.response_value as feedback,
-    cte.response_value_full as feedback_full,
+    cte.response_value_full as feedback,
     CAST(ROUND(RAND() * 3) as INT64) as urgency,
     feedback.organisation as department,
     feedback.primary_organisation as primary_department,
@@ -84,6 +83,6 @@ JOIN CTE
 ON feedback.feedback_record_id=CTE.feedback_record_id
 WHERE feedback.created > DATE("2023-08-01")
 AND feedback.document_type != "special route"
-ORDER BY feedback_record_id
-LIMIT 10000
+ORDER BY feedback_record_id desc
+LIMIT 100000
 """
