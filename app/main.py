@@ -285,6 +285,11 @@ def main():
                 result_ordered.pop("created_date")
                 filtered_list.append(result_ordered)
 
+            # Reformat similarity score as percentage, to no decimal places
+            result_ordered[
+                "Similarity score"
+            ] = f"{result_ordered['Similarity score']*100:.0f}%"
+
         st.write(
             f"{len(filtered_list)} relevant feedback comments found for your search:"
         )
