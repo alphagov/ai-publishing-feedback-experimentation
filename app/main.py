@@ -63,13 +63,16 @@ def load_config(config_file_path):
 
 
 client = load_qdrant_client()
+print(f"QDRANT vars: {QDRANT_HOST}, {QDRANT_PORT}")
 model = load_model(HF_MODEL_NAME)
 filter_options = load_filter_dropdown_values(FILTER_OPTIONS_PATH)
 
 config = load_config(".config/config.json")
-similarity_threshold = float(config.get("dot_product_threshold_1"))
-max_context_records = int(config.get("max_context_records"))
+similarity_threshold = float(config.get("similarity_threshold_1"))
+max_context_records = int(config.get("max_records_for_summarisation"))
 min_records_for_summarisation = int(config.get("min_records_for_summarisation"))
+
+print(f"Using similarity threshold: {similarity_threshold}")
 
 
 def main():
@@ -222,7 +225,7 @@ def main():
         if len(search_term_input) > 0:
             query_embedding = model.encode(search_terms)
             # Call the search function with filters
-            print("Running semantic search on {COLLECTION_NAME}...")
+            print(f"Running semantic search on {COLLECTION_NAME}...")
             search_results = get_semantically_similar_results(
                 client=client,
                 collection_name=COLLECTION_NAME,
@@ -231,6 +234,7 @@ def main():
                 filter_dict=filter_dict,
             )
             results = [dict(result) for result in search_results]
+            print(f"Num results: {len(results)}")
         elif len(search_term_input) == 0 and len(filter_dict["url"]) > 0:
             st.write("Running filter search...")
             # Call the filter function
