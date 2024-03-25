@@ -95,7 +95,7 @@ def main():
     )
 
     # Sidebar
-    st.sidebar.image("data/govuk-feedback.png")
+    st.sidebar.image("data/govuk-feedback-prototype.png")
     st.sidebar.header("Explore themes in user feedback\n")
 
     st.sidebar.write(
@@ -235,7 +235,11 @@ def main():
             )
             results = [dict(result) for result in search_results]
             print(f"Num results: {len(results)}")
-        elif len(search_term_input) == 0 and len(filter_dict["url"]) > 0:
+        elif (
+            len(search_term_input) == 0
+            and any(len(filter_dict[key]) > 0 for key in ["url", "primary_department"])
+            > 0
+        ):
             st.write("Running filter search...")
             # Call the filter function
             search_results = filter_search(
@@ -265,7 +269,7 @@ def main():
 
             result_ordered = {key: result[key] for key in renaming_dict.values()}
             result_ordered["Similarity score"] = (
-                result["score"] if "score" in result else float("NaN")
+                result["score"] if "score" in result else float(1)
             )
             # result_ordered["payload"] = payload
 
