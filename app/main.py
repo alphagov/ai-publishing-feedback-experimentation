@@ -79,9 +79,6 @@ def main():
     # Create a container for the banner
     with st.container():
         # Use markdown with inline CSS/HTML
-
-        # html_content = read_html_file('app/banner.html')
-        # st.markdown(html_content, unsafe_allow_html=True)
         with open("app/banner.html", "r", encoding="utf-8") as file:
             html_content = file.read()
             st.markdown(html_content, unsafe_allow_html=True)
@@ -271,7 +268,6 @@ def main():
             result_ordered["Similarity score"] = (
                 result["score"] if "score" in result else float(1)
             )
-            # result_ordered["payload"] = payload
 
             result_ordered["created_date"] = datetime.datetime.strptime(
                 result_ordered[renaming_dict["created"]], "%Y-%m-%d"
@@ -290,12 +286,7 @@ def main():
                 "Similarity score"
             ] = f"{result_ordered['Similarity score']*100:.0f}%"
 
-        st.write(
-            f"{len(filtered_list)} relevant feedback comments found for your search:"
-        )
-
         # Topic summary where > n records returned
-        # limiting to 20 records for context, to avoid token limits
 
         if get_summary and len(filtered_list) > min_records_for_summarisation:
             feedback_for_context = [
@@ -327,7 +318,9 @@ def main():
             st.write(
                 "No summary requested. Insufficient feedback records for summarisation."
             )
-        st.subheader("All user feedback comments based on your search criteria")
+        st.subheader(
+            f"{len(filtered_list)} user feedback comments based on your search criteria"
+        )
         st.dataframe(
             filtered_list,
             column_config={
