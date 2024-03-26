@@ -37,12 +37,14 @@ def get_semantically_similar_results(
             query_vector=query_embedding,
             query_filter=filter,
             score_threshold=score_threshold,
+            limit=10000000,
         )
     else:
         search_result = client.search(
             collection_name=collection_name,
             query_vector=query_embedding,
             score_threshold=score_threshold,
+            limit=10000000,
         )
 
     return search_result
@@ -68,7 +70,9 @@ def filter_search(client: QdrantClient, collection_name: str, filter_dict: dict)
     )
     if len(filter_dict) > 0:
         search_result = client.scroll(
-            collection_name=collection_name, scroll_filter=filter
+            collection_name=collection_name,
+            scroll_filter=filter,
+            limit=10000000,
         )
         return search_result
     else:

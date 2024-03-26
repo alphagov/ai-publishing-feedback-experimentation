@@ -21,7 +21,7 @@ COLLECTION_NAME = os.getenv("COLLECTION_NAME")
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 FILTER_OPTIONS_PATH = os.getenv("FILTER_OPTIONS_PATH")
 HF_MODEL_NAME = os.getenv("HF_MODEL_NAME")
-QDRANT_HOST = os.getenv("QDRANT_HOST")
+QDRANT_HOST = os.getenv("QDRANT_HOST")  # "localhost" if running locally
 QDRANT_PORT = os.getenv("QDRANT_PORT")
 
 st.set_page_config(layout="wide")
@@ -63,22 +63,22 @@ def load_config(config_file_path):
 
 
 client = load_qdrant_client()
+print(f"QDRANT vars: {QDRANT_HOST}, {QDRANT_PORT}")
 model = load_model(HF_MODEL_NAME)
 filter_options = load_filter_dropdown_values(FILTER_OPTIONS_PATH)
 
 config = load_config(".config/config.json")
-similarity_threshold = float(config.get("dot_product_threshold_1"))
-max_context_records = int(config.get("dot_product_threshold_1"))
+similarity_threshold = float(config.get("similarity_threshold_1"))
+max_context_records = int(config.get("max_records_for_summarisation"))
 min_records_for_summarisation = int(config.get("min_records_for_summarisation"))
+
+print(f"Using similarity threshold: {similarity_threshold}")
 
 
 def main():
     # Create a container for the banner
     with st.container():
         # Use markdown with inline CSS/HTML
-
-        # html_content = read_html_file('app/banner.html')
-        # st.markdown(html_content, unsafe_allow_html=True)
         with open("app/banner.html", "r", encoding="utf-8") as file:
             html_content = file.read()
             st.markdown(html_content, unsafe_allow_html=True)
@@ -92,11 +92,11 @@ def main():
     )
 
     # Sidebar
-    st.sidebar.image("data/govuk-feedback.png")
+    st.sidebar.image("data/govuk-feedback-prototype.png")
     st.sidebar.header("Explore themes in user feedback\n")
 
     st.sidebar.write(
-        "Explore user feedback by topic, URL, urgency rathing, content type  and/or organisation, using AI to summarise themes\n"
+        "Explore user feedback by theme, URL, urgency rathing, content type  and/or organisation, using AI to summarise themes\n"
     )
 
     st.sidebar.subheader("AI summarisation")
@@ -122,9 +122,9 @@ def main():
     st.sidebar.divider()
 
     # Free text box for one search term
-    st.sidebar.header("Explore by topic")
+    st.sidebar.header("Enter a keyword or phrase to find related feedback\n")
     search_term_input = st.sidebar.text_input(
-        "Enter a keyword or phrase.\n For example, tax, driving licence, Universal Credit"
+        "For example, tax, driving licence, Universal Credit"
     )
 
     semantic_search_button = st.sidebar.button("Explore feedback by topic")
@@ -222,6 +222,7 @@ def main():
         if len(search_term_input) > 0:
             query_embedding = model.encode(search_terms)
             # Call the search function with filters
+            print(f"Running semantic search on {COLLECTION_NAME}...")
             search_results = get_semantically_similar_results(
                 client=client,
                 collection_name=COLLECTION_NAME,
@@ -230,7 +231,12 @@ def main():
                 filter_dict=filter_dict,
             )
             results = [dict(result) for result in search_results]
-        elif len(search_term_input) == 0 and len(filter_dict["url"]) > 0:
+            print(f"Num results: {len(results)}")
+        elif (
+            len(search_term_input) == 0
+            and any(len(filter_dict[key]) > 0 for key in ["url", "primary_department"])
+            > 0
+        ):
             st.write("Running filter search...")
             # Call the filter function
             search_results = filter_search(
@@ -262,7 +268,6 @@ def main():
             result_ordered["Similarity score"] = (
                 result["score"] if "score" in result else float(1)
             )
-            # result_ordered["payload"] = payload
 
             result_ordered["created_date"] = datetime.datetime.strptime(
                 result_ordered[renaming_dict["created"]], "%Y-%m-%d"
@@ -276,12 +281,12 @@ def main():
                 result_ordered.pop("created_date")
                 filtered_list.append(result_ordered)
 
-        st.write(
-            f"{len(filtered_list)} relevant feedback comments found for your search:"
-        )
+            # Reformat similarity score as percentage, to no decimal places
+            result_ordered[
+                "Similarity score"
+            ] = f"{result_ordered['Similarity score']*100:.0f}%"
 
         # Topic summary where > n records returned
-        # limiting to 20 records for context, to avoid token limits
 
         if get_summary and len(filtered_list) > min_records_for_summarisation:
             feedback_for_context = [
@@ -313,7 +318,9 @@ def main():
             st.write(
                 "No summary requested. Insufficient feedback records for summarisation."
             )
-        st.subheader("All user feedback comments based on your search criteria")
+        st.subheader(
+            f"{len(filtered_list)} user feedback comments based on your search criteria"
+        )
         st.dataframe(
             filtered_list,
             column_config={

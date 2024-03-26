@@ -18,7 +18,7 @@ def create_openai_summary(
         ]
         completion = client.chat.completions.create(
             messages=messages,  # type: ignore
-            max_tokens=250,
+            max_tokens=1000,
             temperature=0.2,
             model="gpt-3.5-turbo-0125",
         )
