@@ -96,7 +96,7 @@ def main():
     st.sidebar.header("Explore themes in user feedback\n")
 
     st.sidebar.write(
-        "Explore user feedback by topic, URL, urgency rathing, content type  and/or organisation, using AI to summarise themes\n"
+        "Explore user feedback by theme, URL, urgency rathing, content type  and/or organisation, using AI to summarise themes\n"
     )
 
     st.sidebar.subheader("AI summarisation")
@@ -122,9 +122,9 @@ def main():
     st.sidebar.divider()
 
     # Free text box for one search term
-    st.sidebar.header("Explore by topic")
+    st.sidebar.header("Enter a keyword or phrase to find related feedback\n")
     search_term_input = st.sidebar.text_input(
-        "Enter a keyword or phrase.\n For example, tax, driving licence, Universal Credit"
+        "For example, tax, driving licence, Universal Credit"
     )
 
     semantic_search_button = st.sidebar.button("Explore feedback by topic")
