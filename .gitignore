@@ -25,3 +25,6 @@ qdrant_storage
 # Prompts
 prompts/
 prompts/*
+
+# Models
+models/*
