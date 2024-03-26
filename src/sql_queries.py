@@ -84,5 +84,4 @@ ON feedback.feedback_record_id=CTE.feedback_record_id
 WHERE feedback.created > DATE("2023-08-01")
 AND feedback.document_type != "special route"
 ORDER BY feedback_record_id desc
-LIMIT 100000
 """
