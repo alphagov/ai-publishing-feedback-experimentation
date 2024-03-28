@@ -21,7 +21,7 @@ COLLECTION_NAME = os.getenv("COLLECTION_NAME")
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 FILTER_OPTIONS_PATH = os.getenv("FILTER_OPTIONS_PATH")
 HF_MODEL_NAME = os.getenv("HF_MODEL_NAME")
-QDRANT_HOST = os.getenv("QDRANT_HOST")  # "localhost" if running locally
+QDRANT_HOST = os.getenv("QDRANT_HOST_LOCAL")  # "localhost" if running locally
 QDRANT_PORT = os.getenv("QDRANT_PORT")
 
 st.set_page_config(layout="wide")
@@ -101,10 +101,17 @@ def main():
 
     st.sidebar.subheader("AI summarisation")
 
-    get_summary = st.sidebar.checkbox(
-        "Summarise relevant feedback",
-        value=True,
-    )
+    left, right = st.sidebar.columns(2)
+    with left:
+        get_summary = st.checkbox(
+            "Summarise relevant feedback",
+            value=False,
+        )
+    with right:
+        remove_spam = st.checkbox(
+            "Include comments marked as spam",
+            value=False,
+        )
 
     st.sidebar.subheader("Set date range (optional)")
 
