@@ -55,7 +55,7 @@ WITH CTE AS (
   SELECT feedback_record_id,
   STRING_AGG(response_value, ', ') AS response_value_full
 FROM
-  `govuk-ai-publishing.joined_feedback_view.feedback_6mth_with_metadata_updated`
+  @PUBLISHING_VIEW
 GROUP BY
   feedback_record_id
 )
@@ -78,7 +78,7 @@ SELECT
     feedback.locale,
     feedback.title as page_title,
     feedback.taxons
-FROM `govuk-ai-publishing.joined_feedback_view.feedback_6mth_with_metadata_updated` feedback
+FROM @PUBLISHING_VIEW feedback
 JOIN CTE
 ON feedback.feedback_record_id=CTE.feedback_record_id
 WHERE feedback.created > DATE("2023-08-01")
