@@ -114,7 +114,7 @@ def main():
     st.sidebar.header("Explore themes in user feedback\n")
 
     st.sidebar.write(
-        "Explore user feedback by theme, URL, urgency rathing, content type  and/or organisation, using AI to summarise themes\n"
+        "Explore user feedback by topic, URL(s), urgency rating, organisation and/or content type, and use AI to summarise themes.\n"
     )
 
     st.sidebar.subheader("AI summarisation")
@@ -224,7 +224,6 @@ def main():
         default=[],
     )
 
-    st.sidebar.subheader("\n")
     with open("app/style/button.css", "r") as file:
         st.sidebar.markdown(f"<style>{file.read()}</style>", unsafe_allow_html=True)
         search_button = st.sidebar.button(
