@@ -1,6 +1,7 @@
 import datetime
 import os
 import json
+import subprocess
 
 import streamlit as st
 from qdrant_client import QdrantClient
@@ -21,7 +22,7 @@ COLLECTION_NAME = os.getenv("COLLECTION_NAME")
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 FILTER_OPTIONS_PATH = os.getenv("FILTER_OPTIONS_PATH")
 HF_MODEL_NAME = os.getenv("HF_MODEL_NAME")
-QDRANT_HOST = os.getenv("QDRANT_HOST_LOCAL")  # "localhost" if running locally
+QDRANT_HOST = os.getenv("QDRANT_HOST")  # "localhost" if running locally
 QDRANT_PORT = os.getenv("QDRANT_PORT")
 
 st.set_page_config(layout="wide")
@@ -62,10 +63,19 @@ def load_config(config_file_path):
     return config
 
 
+@st.cache_resource()
+def get_filters_metadata():
+    try:
+        subprocess.run(["python", "-u", "app/get_metadata_for_filters.py"])
+    except Exception as e:
+        print(f"Error running metadata script: {e}")
+
+
 client = load_qdrant_client()
 print(f"QDRANT vars: {QDRANT_HOST}, {QDRANT_PORT}")
 model = load_model(HF_MODEL_NAME)
 filter_options = load_filter_dropdown_values(FILTER_OPTIONS_PATH)
+
 
 config = load_config(".config/config.json")
 similarity_threshold = float(config.get("similarity_threshold_1"))
@@ -73,6 +83,9 @@ max_context_records = int(config.get("max_records_for_summarisation"))
 min_records_for_summarisation = int(config.get("min_records_for_summarisation"))
 
 print(f"Using similarity threshold: {similarity_threshold}")
+
+# Run the script to get metadata for filters
+get_filters_metadata()
 
 
 def main():
