@@ -72,10 +72,7 @@ def get_filters_metadata():
 
 
 client = load_qdrant_client()
-print(f"QDRANT vars: {QDRANT_HOST}, {QDRANT_PORT}")
 model = load_model(HF_MODEL_NAME)
-filter_options = load_filter_dropdown_values(FILTER_OPTIONS_PATH)
-
 
 config = load_config(".config/config.json")
 similarity_threshold = float(config.get("similarity_threshold_1"))
@@ -86,6 +83,7 @@ print(f"Using similarity threshold: {similarity_threshold}")
 
 # Run the script to get metadata for filters
 get_filters_metadata()
+filter_options = load_filter_dropdown_values(FILTER_OPTIONS_PATH)
 
 
 def main():
