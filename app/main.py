@@ -1,23 +1,24 @@
 import datetime
-import os
 import json
+import os
 import subprocess
 
 import streamlit as st
+from dotenv import load_dotenv
 from qdrant_client import QdrantClient
 from sentence_transformers import SentenceTransformer
 
+from prompts.openai_summarise import system_prompt, user_prompt
 from src.collection.query_collection import (
-    get_semantically_similar_results,
     filter_search,
+    get_semantically_similar_results,
 )
-from src.common import urgency_translate, renaming_dict
+from src.common import renaming_dict, urgency_translate
 from src.utils.call_openai_summarise import create_openai_summary
 from src.utils.utils import process_csv_file, process_txt_file
 
-from prompts.openai_summarise import system_prompt, user_prompt
-
 # get env vars
+load_dotenv()
 COLLECTION_NAME = os.getenv("COLLECTION_NAME")
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 FILTER_OPTIONS_PATH = os.getenv("FILTER_OPTIONS_PATH")
@@ -110,7 +111,7 @@ def main():
     )
 
     # Sidebar
-    st.sidebar.image("data/govuk-feedback-prototype.png")
+    st.sidebar.image("app/data/govuk-feedback-prototype.png")
     st.sidebar.header("Explore themes in user feedback\n")
 
     st.sidebar.write(

@@ -19,6 +19,7 @@ venv*
 data/*
 app/data/*
 qdrant_storage
+app/app/data/distinct_dimensions.json
 
 # DS_Store
 .DS_Store
