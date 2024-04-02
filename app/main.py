@@ -218,11 +218,14 @@ def main():
     # convert to int if not None, else keep as None
     urgency_input = [int(urgency) if urgency else None for urgency in urgency_input]
 
+    spam_filter = ["not spam"] if remove_spam else ["spam", "not spam", ""]
+
     filter_dict = {
         "url": matched_page_paths,
         "urgency": urgency_input,
         "primary_department": org_input,
         "document_type": doc_type_input,
+        "spam_classification": spam_filter,
     }
 
     if any([filter_search_button, semantic_search_button]):
