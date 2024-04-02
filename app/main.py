@@ -25,7 +25,14 @@ HF_MODEL_NAME = os.getenv("HF_MODEL_NAME")
 QDRANT_HOST = os.getenv("QDRANT_HOST")  # "localhost" if running locally
 QDRANT_PORT = os.getenv("QDRANT_PORT")
 
-st.set_page_config(layout="wide")
+st.set_page_config(
+    layout="wide",
+    menu_items={
+        "Report a bug": "https://forms.gle/C7P6kYrRJT4F5yfz8",
+        "About": "This is a prototype app developed by the GOV.UK AI team. \
+                    For assistance, please contact the team via Slack at #ai-govuk.",
+    },
+)
 
 
 # Load the model only once, at the start of the app.
@@ -90,7 +97,7 @@ def main():
     # Create a container for the banner
     with st.container():
         # Use markdown with inline CSS/HTML
-        with open("app/banner.html", "r", encoding="utf-8") as file:
+        with open("app/style/banner.html", "r", encoding="utf-8") as file:
             html_content = file.read()
             st.markdown(html_content, unsafe_allow_html=True)
 
@@ -128,11 +135,15 @@ def main():
 
     # Date range slider in the sidebar.
     today = datetime.date.today()
+    n_days_default = 90
+    st.sidebar.write(f"Showing data from past {n_days_default} days as default view.")
 
     col1, col2 = st.sidebar.columns(2)
     with col1:
         start_date = st.date_input(
-            "Start date:", today - datetime.timedelta(days=90), format="DD/MM/YYYY"
+            "Start date:",
+            today - datetime.timedelta(days=n_days_default),
+            format="DD/MM/YYYY",
         )
     with col2:
         end_date = st.date_input("End date:", today, format="DD/MM/YYYY")
@@ -140,20 +151,14 @@ def main():
     st.sidebar.divider()
 
     # Free text box for one search term
-    st.sidebar.header("Enter a keyword or phrase to find related feedback\n")
+    st.sidebar.header("Explore by keyword or phrase\n")
     search_term_input = st.sidebar.text_input(
         "For example, tax, driving licence, Universal Credit"
     )
 
-    semantic_search_button = st.sidebar.button("Explore feedback by topic")
-
     search_terms = search_term_input.strip().lower()
 
-    st.sidebar.divider()
-
-    st.sidebar.header("Narrow your search\n")
-
-    st.sidebar.subheader("By URL(s)")
+    st.sidebar.header("By URL(s)")
 
     # List of all pages for dropdown and filtering
     all_pages = filter_options["subject_page_path"]
@@ -194,10 +199,12 @@ def main():
     else:
         matched_page_paths = []
 
+    st.sidebar.divider()
+    st.sidebar.header("Narrow your search\n")
     st.sidebar.subheader("By urgency")
 
     urgency_user_input = st.sidebar.multiselect(
-        "See feedback by high, medium, low and unknown urgency rating.\nUrgency has been inferred by AI.",
+        "See feedback by high, medium, low and unknown urgency rating (Urgency inferred by AI).",
         ["Low", "Medium", "High", "Unknown"],
         max_selections=4,
     )
@@ -212,19 +219,30 @@ def main():
 
     st.sidebar.subheader("By content type")
     doc_type_input = st.sidebar.multiselect(
-        "Select content type:",
+        "For example, guide, detailed guide, consultation",
         filter_options["document_type"],
         default=[],
     )
 
-    filter_search_button = st.sidebar.button("Explore feedback")
+    st.sidebar.subheader("\n")
+    with open("app/style/button.css", "r") as file:
+        st.sidebar.markdown(f"<style>{file.read()}</style>", unsafe_allow_html=True)
+        search_button = st.sidebar.button(
+            "Explore feedback", key="search_button", type="primary"
+        )
 
     st.sidebar.divider()
 
-    st.sidebar.write(
-        "Similarity score is calculated by an AI model. \
+    st.sidebar.markdown(
+        "_**Similarity score** is calculated by an AI model. \
                      The higher the score, the more similar the feedback \
-                     content is to the search term or phrase."
+                     content is to the search term or phrase._"
+    )
+
+    st.sidebar.markdown(
+        "_**Urgency** is inferred by an AI model via the OpenAI API. \
+                     It should reflect the urgency of the problem from \
+                     the point of view of the publishing organisation._"
     )
     # convert to int if not None, else keep as None
     urgency_input = [int(urgency) if urgency else None for urgency in urgency_input]
@@ -239,7 +257,7 @@ def main():
         "spam_classification": spam_filter,
     }
 
-    if any([filter_search_button, semantic_search_button]):
+    if search_button:
         if len(search_term_input) > 0:
             query_embedding = model.encode(search_terms)
             # Call the search function with filters
@@ -267,7 +285,7 @@ def main():
             results = [dict(result) for result in data]
         else:
             st.write(
-                "Please supply a search term or terms and hit Apply Filters to see results..."
+                "Please supply a search term or URL(s) and hit 'Explore Feedback' to see results..."
             )
             st.stop()
 
