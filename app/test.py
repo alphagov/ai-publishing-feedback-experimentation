@@ -13,4 +13,3 @@ print(COLLECTION_NAME[:2])
 client = QdrantClient(QDRANT_HOST, port=QDRANT_PORT)
 
 print(client.get_collections())
-print(client.create_snapshot(EVAL_COLLECTION_NAME, wait=False))
