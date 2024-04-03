@@ -1,0 +1,6 @@
+steps:
+  # Build the Docker image using the Containerfile in the streamlit-app directory
+  - name: 'gcr.io/cloud-builders/docker'
+    args: ['build', '-t', 'gcr.io/$PROJECT_ID/app', '-f', 'app/Containerfile', '.']
+images:
+  - 'gcr.io/$PROJECT_ID/streamlit-app'
