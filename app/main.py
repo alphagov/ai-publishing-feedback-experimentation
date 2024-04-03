@@ -95,6 +95,7 @@ filter_options = load_filter_dropdown_values(FILTER_OPTIONS_PATH)
 
 
 def main():
+    st.image("app/data/ai_feedback_tool.png", use_column_width=True)
     # Create a container for the banner
     with st.container():
         # Use markdown with inline CSS/HTML
@@ -111,7 +112,6 @@ def main():
     )
 
     # Sidebar
-    st.sidebar.image("app/data/govuk-feedback-prototype.png")
     st.sidebar.header("Explore themes in user feedback\n")
 
     st.sidebar.write(
