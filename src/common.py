@@ -21,7 +21,7 @@ renaming_dict = {
     "url": "URL",
     "page_title": "Page title",
     "urgency": "Urgency",
-    "feedback_type": "Feedback type",
+    "feedback_type": "Feedback source",
     "primary_department": "Publishing department",
     "document_type": "Content type",
     "spam_classification": "Spam classification",
