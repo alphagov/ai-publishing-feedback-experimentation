@@ -12,3 +12,7 @@ section[data-testid="stSidebar"] div.stButton button  {
     cursor: pointer;
     border-radius: 10px; /* Assuming there's a slight roundness to the button */
   }
+
+div[data-testid="InputInstructions"] > span:nth-child(1) {
+    visibility: hidden;
+}
