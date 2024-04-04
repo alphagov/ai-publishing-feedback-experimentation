@@ -8,9 +8,29 @@ TODO
 
 ## Technical documentation
 
-To run the application, make sure you have docker and docker-compose installed, and have the relevant environment variables stored (speak with the AI team). Then run `docker-compose up`.
+### Running the application locally using Docker compose
+
+Note: This will run the streamlit app, the Qdrant database, and the evaluation script on your local machine
+
+To run the application, make sure you have docker and docker-compose installed and have the relevant environment variables stored (speak with the AI team). Then run `docker-compose up`.
 
 You will also need to download data to fill the dashboard dropdowns. The code to do this can be found in `notebooks/get_feedback_dimensions.ipynb`
+
+### Running the application locally using a remote Qdrant database in Compute Engine
+
+Note: This will run ONLY the streamlit app on your local machine
+
+To run the application locally using a remote Qdrant database in Compute engine you can simply run `streamlit run app/main.py` from the root directory. This will start the application on your local machine and connect to the remote Qdrant database IF you have the correct environment variables set. The environment variables are stored in the `compute_engine.env` file in the root directory.
+
+### Using Cloud Build to deploy the application to Cloud Run
+
+Note: This will deploy the streamlit app to Cloud Run
+
+To deploy the application to Cloud Run, you can use Cloud Build. The `cloudbuild.yaml` and `Dockerfile` files in the root directory contain the steps to build the container image and deploy it to Cloud Run.
+
+To run the build, you can use the following command from the root directory: `gcloud builds submit --config cloudbuild.yaml` The resulting build might take a while because it's using buildx to build the image. This image will be pushed to the Google Artifact Registry and then can be deployed to Cloud Run.
+
+To deploy to Cloud Run locally (avoiding the requirement to type lots of environment variables into the cloud console), you can use the command found in `deploy_to_cloudrun.sh`. This script will deploy the image to Cloud Run and set the environment variables for you. Run this file by typing `bash deploy_to_cloudrun.sh` in the root directory.
 
 ### A note on Poetry
 
