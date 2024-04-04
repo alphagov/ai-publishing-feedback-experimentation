@@ -16,6 +16,10 @@ from src.utils.utils import process_csv_file, process_txt_file
 
 from prompts.openai_summarise import system_prompt, user_prompt
 
+from dotenv import load_dotenv
+
+load_dotenv()
+
 # get env vars
 COLLECTION_NAME = os.getenv("COLLECTION_NAME")
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
@@ -92,7 +96,7 @@ def main():
     )
 
     # Sidebar
-    st.sidebar.image("data/govuk-feedback.png")
+    st.sidebar.image("app/data/govuk-feedback.png")
     st.sidebar.header("Explore themes in user feedback\n")
 
     st.sidebar.write(

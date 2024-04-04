@@ -8,6 +8,10 @@ from src.sql_queries import (
     query_distinct_doc_type,
 )
 
+from dotenv import load_dotenv
+
+load_dotenv()
+
 PUBLISHING_PROJECT_ID = os.getenv("PUBLISHING_PROJECT_ID")
 PUBLISHING_VIEW = os.getenv("PUBLISHING_VIEW")
 FILTER_OPTIONS_PATH = os.getenv("FILTER_OPTIONS_PATH")
