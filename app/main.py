@@ -95,7 +95,7 @@ filter_options = load_filter_dropdown_values(FILTER_OPTIONS_PATH)
 
 
 def main():
-    st.image("app/data/ai_feedback_tool.png", use_column_width=True)
+    sidebar_image_path = "app/style/govuk-feedback-prototype-sidebar.png"
     # Create a container for the banner
     with st.container():
         # Use markdown with inline CSS/HTML
@@ -112,6 +112,7 @@ def main():
     )
 
     # Sidebar
+    st.sidebar.image(sidebar_image_path, use_column_width=True)
     st.sidebar.header("Explore themes in user feedback\n")
 
     st.sidebar.write(
@@ -328,17 +329,23 @@ def main():
         # Topic summary where > n records returned
 
         if get_summary and len(filtered_list) > min_records_for_summarisation:
-            feedback_for_context = [
+            available_feedback_for_context = [
                 record[renaming_dict["feedback"]] for record in filtered_list
             ]
+            # Limit the number of feedback records to summarise, if number exceeds max_context_records
+            num_feedback_for_context = (
+                len(available_feedback_for_context)
+                if len(available_feedback_for_context) <= max_context_records
+                else max_context_records
+            )
             summary = create_openai_summary(
                 system_prompt,
                 user_prompt,
-                feedback_for_context[:max_context_records],
+                available_feedback_for_context[:num_feedback_for_context],
                 OPENAI_API_KEY,
             )
             st.subheader(
-                f"Top themes based on {len(feedback_for_context)} records of user feedback"
+                f"Top themes based on {num_feedback_for_context} records of user feedback"
             )
             st.write(
                 "Identified and summarised by AI technology. Please verify the outputs with other data sources to ensure accuracy of information."
