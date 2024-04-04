@@ -7,6 +7,7 @@ import streamlit as st
 from dotenv import load_dotenv
 from qdrant_client import QdrantClient
 from sentence_transformers import SentenceTransformer
+from streamlit_js_eval import streamlit_js_eval
 
 from prompts.openai_summarise import system_prompt, user_prompt
 from src.collection.query_collection import (
@@ -116,7 +117,8 @@ def main():
     st.sidebar.header("Explore themes in user feedback\n")
 
     st.sidebar.write(
-        "Explore user feedback by topic, URL(s), urgency rating, organisation and/or content type, and use AI to summarise themes.\n"
+        "Explore user feedback by topic, URL(s), urgency rating, organisation and/or content type, and use AI to summarise themes.\
+            Click **Explore feedback** button to search."
     )
 
     st.sidebar.subheader("AI summarisation")
@@ -126,11 +128,13 @@ def main():
         get_summary = st.checkbox(
             "Summarise relevant feedback",
             value=False,
+            key="get_summary",
         )
     with right:
         remove_spam = st.checkbox(
             "Include comments marked as spam",
             value=False,
+            key="remove_spam",
         )
 
     st.sidebar.subheader("Set date range (optional)")
@@ -155,7 +159,7 @@ def main():
     # Free text box for one search term
     st.sidebar.header("Explore by keyword or phrase\n")
     search_term_input = st.sidebar.text_input(
-        "For example, tax, driving licence, Universal Credit"
+        "For example, tax, driving licence, Universal Credit", key="search_term_input"
     )
 
     search_terms = search_term_input.strip().lower()
@@ -170,11 +174,13 @@ def main():
         all_pages,
         # max_selections=4,
         default=[],
+        key="user_input_pages",
     )
     # File upload for list of URLs
     uploaded_url_file = st.sidebar.file_uploader(
         "Or bulk upload a list of URLs using a CSV or TXT file. Mac file limit 200MB per file",
         type=["txt", "csv"],
+        key="uploaded_url_file",
     )
 
     include_child_pages = True
@@ -209,6 +215,7 @@ def main():
         "See feedback by high, medium, low and unknown urgency rating (Urgency inferred by AI).",
         ["Low", "Medium", "High", "Unknown"],
         max_selections=4,
+        key="urgency_user_input",
     )
 
     # translate urgency rating to human readable
@@ -216,7 +223,10 @@ def main():
 
     st.sidebar.subheader("By publishing organisation")
     org_input = st.sidebar.multiselect(
-        "Select publishing organisation:", filter_options["organisation"], default=[]
+        "Select publishing organisation:",
+        filter_options["organisation"],
+        default=[],
+        key="org_input",
     )
 
     st.sidebar.subheader("By content type")
@@ -224,13 +234,30 @@ def main():
         "For example, guide, detailed guide, consultation",
         filter_options["document_type"],
         default=[],
+        key="doc_type_input",
     )
 
-    with open("app/style/button.css", "r") as file:
-        st.sidebar.markdown(f"<style>{file.read()}</style>", unsafe_allow_html=True)
-        search_button = st.sidebar.button(
-            "Explore feedback", key="search_button", type="primary"
-        )
+    # Add buttons to search and clear filters
+    st.sidebar.text("")
+    search_button = st.sidebar.button(
+        "Explore feedback",
+        key="search_button",
+        type="primary",
+        help="Click to search",
+        use_container_width=True,
+    )
+
+    clear_filters = st.sidebar.button(
+        "Clear all filters",
+        key="clear_filters",
+        type="secondary",
+        help="Reset search parameters",
+        use_container_width=True,
+    )
+
+    if clear_filters:
+        # Reload webpage to clear all filters
+        streamlit_js_eval(js_expressions="parent.window.location.reload()")
 
     st.sidebar.divider()
 
@@ -327,7 +354,6 @@ def main():
             ] = f"{result_ordered['Similarity score']*100:.0f}%"
 
         # Topic summary where > n records returned
-
         if get_summary and len(filtered_list) > min_records_for_summarisation:
             available_feedback_for_context = [
                 record[renaming_dict["feedback"]] for record in filtered_list

@@ -16,6 +16,7 @@ sentence-transformers = "^2.5.1"
 google-cloud-bigquery = "^3.18.0"
 openai = "^1.13.3"
 python-dotenv = "^1.0.1"
+streamlit-js-eval = "^0.1.7"
 
 
 [tool.poetry.group.dev.dependencies]
