@@ -96,6 +96,10 @@ filter_options = load_filter_dropdown_values(FILTER_OPTIONS_PATH)
 
 
 def main():
+    # Apply custom css elements
+    with open("app/style/custom.css", "r") as file:
+        st.sidebar.markdown(f"<style>{file.read()}</style>", unsafe_allow_html=True)
+
     sidebar_image_path = "app/style/govuk-feedback-prototype-sidebar.png"
     # Create a container for the banner
     with st.container():
