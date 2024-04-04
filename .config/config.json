@@ -1,6 +1,6 @@
 {
-    "dot_product_threshold_1" : 0.2,
-    "dot_product_threshold_2" : 0.5,
-    "max_context_records" : 30,
+    "similarity_threshold_1" : 0.5,
+    "similarity_threshold_2" : 0.7,
+    "max_records_for_summarisation" : 200,
     "min_records_for_summarisation" : 5
 }

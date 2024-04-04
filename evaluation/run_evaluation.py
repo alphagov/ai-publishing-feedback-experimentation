@@ -13,7 +13,7 @@ PUBLISHING_PROJECT_ID = os.getenv("PUBLISHING_PROJECT_ID")
 EVALUATION_TABLE = os.getenv("EVALUATION_TABLE")
 QDRANT_HOST = os.getenv("QDRANT_HOST")
 QDRANT_PORT = os.getenv("QDRANT_PORT")
-COLLECTION_NAME = os.getenv("COLLECTION_NAME")
+EVAL_COLLECTION_NAME = os.getenv("EVAL_COLLECTION_NAME")
 HF_MODEL_NAME = os.getenv("HF_MODEL_NAME")
 
 config = load_config(".config/config.json")
@@ -36,7 +36,7 @@ def main():
     # Assess the retrieval accuracy
     ss_results = assess_retrieval_accuracy(
         client=client,
-        collection_name=COLLECTION_NAME,
+        collection_name=EVAL_COLLECTION_NAME,
         model_name=HF_MODEL_NAME,
         data=data,
         regex_ids=regex_ids,
@@ -47,7 +47,7 @@ def main():
     # Assess the scroll retrieval accuracy
     scroll_results = assess_scroll_retrieval(
         client=client,
-        collection_name=COLLECTION_NAME,
+        collection_name=EVAL_COLLECTION_NAME,
         data=data,
         regex_ids=regex_ids,
     )
