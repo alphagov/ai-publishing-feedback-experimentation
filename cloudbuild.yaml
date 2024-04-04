@@ -1,6 +1,18 @@
 steps:
-  # Build the Docker image using the Containerfile in the streamlit-app directory
+  # Build the Docker image
   - name: 'gcr.io/cloud-builders/docker'
-    args: ['build', '-t', 'gcr.io/$PROJECT_ID/app', '-f', 'app/Containerfile', '.']
+    # args: ['build', '-t', 'gcr.io/govuk-ai-publishing/app', '.']
+    args: ['buildx',
+           'build',
+           '--platform=linux/amd64',
+           '-t',
+           'europe-west2-docker.pkg.dev/govuk-ai-publishing/feedback-dashboard/app:latest',
+           '.']
+
+  # Push the Docker image to Google Artifact Registry
+  - name: 'gcr.io/cloud-builders/docker'
+    args: ['push',
+           'europe-west2-docker.pkg.dev/govuk-ai-publishing/feedback-dashboard/app:latest']
+
 images:
-  - 'gcr.io/$PROJECT_ID/streamlit-app'
+  - europe-west2-docker.pkg.dev/govuk-ai-publishing/feedback-dashboard/app:latest
