@@ -39,6 +39,8 @@ services:
     build:
       context: .
       dockerfile: ./app/Containerfile
+    volumes:
+      - ~/.config/gcloud:/root/.config/gcloud:ro
     ports:
       - "8501:8501" # Expose the default Streamlit port
     env_file:
