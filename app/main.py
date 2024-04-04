@@ -121,8 +121,7 @@ def main():
     st.sidebar.header("Explore themes in user feedback\n")
 
     st.sidebar.write(
-        "Explore user feedback by topic, URL(s), urgency rating, organisation and/or content type, and use AI to summarise themes.\
-            Click **Explore feedback** button to search."
+        "Search by keyword, URL(s), urgency, organisation and/or content type. Use AI summarisation to identify themes in user comments."
     )
 
     st.sidebar.subheader("AI summarisation")
