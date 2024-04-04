@@ -1,7 +1,6 @@
 steps:
   # Build the Docker image
   - name: 'gcr.io/cloud-builders/docker'
-    # args: ['build', '-t', 'gcr.io/govuk-ai-publishing/app', '.']
     args: ['buildx',
            'build',
            '--platform=linux/amd64',
