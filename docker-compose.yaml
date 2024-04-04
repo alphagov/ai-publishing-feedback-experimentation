@@ -39,12 +39,15 @@ services:
     build:
       context: .
       dockerfile: ./app/Containerfile
+    volumes:
+      - ~/.config/gcloud:/root/.config/gcloud:ro
     ports:
       - "8501:8501" # Expose the default Streamlit port
     env_file:
       - path: ./docker-compose.env
     environment:
       - QDRANT_HOST=qdrant # Use the service name as the hostname for inter-service communication
+      - GOOGLE_APPLICATION_CREDENTIALS=/root/.config/gcloud/application_default_credentials.json
     depends_on:
       - qdrant
       - init_script

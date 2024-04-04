@@ -13,11 +13,13 @@ ENV/
 env.bak/
 venv.bak/
 venv*
+*qdrant_config.toml
 
 #  Data
 data/*
 app/data/*
 qdrant_storage
+app/app/data/distinct_dimensions.json
 
 # DS_Store
 .DS_Store
@@ -25,3 +27,6 @@ qdrant_storage
 # Prompts
 prompts/
 prompts/*
+
+# Models
+models/*

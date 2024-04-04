@@ -1,17 +1,16 @@
-import os
 import json
-from src.utils.bigquery import query_bigquery
-
-from src.sql_queries import (
-    query_distinct_page_paths,
-    query_distinct_orgs,
-    query_distinct_doc_type,
-)
+import os
 
 from dotenv import load_dotenv
 
-load_dotenv()
+from src.sql_queries import (
+    query_distinct_doc_type,
+    query_distinct_orgs,
+    query_distinct_page_paths,
+)
+from src.utils.bigquery import query_bigquery
 
+load_dotenv()
 PUBLISHING_PROJECT_ID = os.getenv("PUBLISHING_PROJECT_ID")
 PUBLISHING_VIEW = os.getenv("PUBLISHING_VIEW")
 FILTER_OPTIONS_PATH = os.getenv("FILTER_OPTIONS_PATH")
