@@ -85,6 +85,14 @@ def upsert_to_collection_from_vectors(
             print(operation_info)
         except Exception as e:
             print(f"Error upserting to collection {collection_name}: {e}")
+            print("Retrying upsertion...")
+            try:
+                operation_info = client.upsert(
+                    collection_name=collection_name, wait=True, points=chunk
+                )
+                print(operation_info)
+            except Exception as e:
+                print(f"Error upserting to collection {collection_name} twice: {e}")
 
 
 def get_latest_snapshot_location(snapshots: list) -> str:
