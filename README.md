@@ -8,11 +8,34 @@ TODO
 
 ## Technical documentation
 
-To run the application, make sure you have docker and docker-compose installed, and have the relevant environment variables stored (speak with the AI team). Then run `docker-compose up`.
+You have two options for running the application - run it over the remote vector store (Qdrant collection) or populate a local collection and run over that. You can run locally either with docker from the command line, or using docker-compose to run everything with one command.
 
-You will also need to download data to fill the dashboard dropdowns. The code to do this can be found in `notebooks/get_feedback_dimensions.ipynb`
+### Running over remote collection (using Google Cloud Engine)
+Ensure you have the correct environment variables set (speak with the GOV.UK AI team), paying particular attention to the QDRANT_HOST variable, and ensuring the VM in GCE is running and populated. If so, you can run the application locally with
+`streamlit run app/main.py`
 
-### A note on Poetry
+If the collection on the VM has not been created/populated, you can simply run
+`python collection/create_collection.py`
+to populate it.
+
+### Running over local collection
+Before starting, make sure you have docker and docker-compose installed.
+
+#### With docker-compose (recommended)
+To run the application with one docker-compose command, make sure you have the relevant environment variables stored (speak with the AI team). Then run `docker-compose up`.
+
+#### With Docker
+To run locally using Docker, you can run
+` docker run -p 6333:6333 -p 6334:6334 -v $(pwd)/qdrant_storage:/qdrant/storage:z qdrant/qdrant`
+and then run
+`python collection/create_collection.py`
+to populate the local collection, ensuring `QDRANT_HOST` is set to "localhost" in your environment variables. This may take a while to run
+
+You can then run
+`streamlit run app/main.py`
+to run the application locally.
+
+## A note on Poetry
 
 To install dependencies into a new environment, run `poetry install`. This will create an environment if one does not already exist, following the naming convention "project-name-py3.XX".
 
