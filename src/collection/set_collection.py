@@ -85,3 +85,24 @@ def upsert_to_collection_from_vectors(
             print(operation_info)
         except Exception as e:
             print(f"Error upserting to collection {collection_name}: {e}")
+
+
+def get_latest_snapshot_location(snapshots: list) -> str:
+    """
+    Finds the location of the latest snapshot from a list of snapshot descriptions.
+
+    Args:
+        snapshots (List[SnapshotDescription]): A list of snapshot descriptions.
+
+    Returns:
+        str: The file location (name) of the latest snapshot.
+    """
+    # Convert the creation_time string to a datetime object for each snapshot and sort the list
+    snapshots_sorted = sorted(
+        snapshots,
+        key=lambda snapshot: datetime.fromisoformat(snapshot.creation_time),
+        reverse=True,
+    )
+    if snapshots_sorted:
+        # Return the name of the latest snapshot
+        return snapshots_sorted[0].name
