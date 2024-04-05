@@ -26,7 +26,7 @@ QDRANT_PORT = os.getenv("QDRANT_PORT")
 config = load_config(".config/config.json")
 
 # TODO: add arg parser for populate from snapshot or not
-parser = argparse.ArgumentParser(description="Your script description.")
+parser = argparse.ArgumentParser(description="Create a Qdrant collection from BigQuery")
 
 # Add a boolean argument that defaults to True.
 # Use 'store_false' to set the value to False when the flag is present.
