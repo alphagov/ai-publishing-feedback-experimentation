@@ -23,7 +23,7 @@ for name in [COLLECTION_NAME, EVAL_COLLECTION_NAME]:
                 client.delete_snapshot(name, snapshot.name)
 
             elif snapshot.name == latest_snapshot and len(snapshots) == 1:
-                print(f"Only latest snapshot remainsfor collection {name}")
+                print(f"Only latest snapshot remains for collection {name}")
 
     except Exception as e:
         print(f"Snapshots not found for collection {name}: {e}")
