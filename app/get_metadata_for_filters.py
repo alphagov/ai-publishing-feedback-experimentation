@@ -11,17 +11,11 @@ from src.sql_queries import (
 from src.utils.bigquery import query_bigquery
 
 
-def load_and_replace_dotenv(dotenv_path=".env"):
-    load_dotenv(dotenv_path)
-    for key in os.environ:
-        value = os.environ[key].replace("\\", "")
-        os.environ[key] = value
-
-
-load_and_replace_dotenv("/path/to/your/.env")
+load_dotenv()
 
 PUBLISHING_PROJECT_ID = os.getenv("PUBLISHING_PROJECT_ID")
 PUBLISHING_VIEW = os.getenv("PUBLISHING_VIEW")
+PUBLISHING_VIEW = f"`{PUBLISHING_VIEW}`"
 FILTER_OPTIONS_PATH = os.getenv("FILTER_OPTIONS_PATH")
 
 queries = {

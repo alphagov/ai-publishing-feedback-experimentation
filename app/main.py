@@ -20,14 +20,7 @@ from src.utils.utils import process_csv_file, process_txt_file
 
 
 # get env vars
-def load_and_replace_dotenv(dotenv_path=".env"):
-    load_dotenv(dotenv_path)
-    for key in os.environ:
-        value = os.environ[key].replace("\\", "")
-        os.environ[key] = value
-
-
-load_and_replace_dotenv("/path/to/your/.env")
+load_dotenv()
 
 COLLECTION_NAME = os.getenv("COLLECTION_NAME")
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
