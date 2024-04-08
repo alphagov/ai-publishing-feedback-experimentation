@@ -30,5 +30,3 @@ prompts/*
 
 # Models
 models/*
-
-deploy_to_cloudrun.sh

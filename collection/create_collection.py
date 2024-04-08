@@ -12,7 +12,16 @@ from src.sql_queries import query_labelled_feedback, query_all_feedback
 from src.utils.bigquery import query_bigquery
 from src.utils.utils import load_qdrant_client, load_config
 
-load_dotenv()
+
+def load_and_replace_dotenv(dotenv_path=".env"):
+    load_dotenv(dotenv_path)
+    for key in os.environ:
+        value = os.environ[key].replace("\\", "")
+        os.environ[key] = value
+
+
+load_and_replace_dotenv("/path/to/your/.env")
+
 PUBLISHING_PROJECT_ID = os.getenv("PUBLISHING_PROJECT_ID")
 LABELLED_FEEDBACK_TABLE = os.getenv("EVALUATION_TABLE")
 PUBLISHING_VIEW = os.getenv("PUBLISHING_VIEW")

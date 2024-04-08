@@ -3,7 +3,16 @@ import os
 from dotenv import load_dotenv
 from qdrant_client import QdrantClient
 
-load_dotenv()
+
+def load_and_replace_dotenv(dotenv_path=".env"):
+    load_dotenv(dotenv_path)
+    for key in os.environ:
+        value = os.environ[key].replace("\\", "")
+        os.environ[key] = value
+
+
+load_and_replace_dotenv("/path/to/your/.env")
+
 QDRANT_HOST = os.getenv("QDRANT_HOST")
 QDRANT_PORT = os.getenv("QDRANT_PORT")
 COLLECTION_NAME = os.getenv("COLLECTION_NAME")
