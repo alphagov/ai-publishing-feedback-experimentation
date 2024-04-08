@@ -31,4 +31,10 @@ renaming_dict = {
     # "sentiment": "Sentiment",
 }
 
-urgency_translate = {"Low": "1", "Medium": "2", "High": "3", "Unknown": "-1"}
+urgency_translate = {
+    "Low": "1",
+    "Medium": "2",
+    "High": "3",
+    "Unknown": "-1",
+    "None": "0",
+}
