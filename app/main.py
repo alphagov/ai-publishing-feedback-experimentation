@@ -10,7 +10,7 @@ from sentence_transformers import SentenceTransformer
 from streamlit_js_eval import streamlit_js_eval
 
 from prompts.openai_summarise import system_prompt, user_prompt
-from src.collection.query_collection import (
+from src.collection_utils.query_collection import (
     filter_search,
     get_semantically_similar_results,
 )
