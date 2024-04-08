@@ -3,7 +3,7 @@ from dotenv import load_dotenv
 
 from qdrant_client.http.models import Distance
 
-from src.collection.set_collection import (
+from src.collection_utils.set_collection import (
     create_collection,
     create_vectors_from_data,
     upsert_to_collection_from_vectors,

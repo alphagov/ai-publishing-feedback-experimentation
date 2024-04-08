@@ -11,7 +11,7 @@ from streamlit_js_eval import streamlit_js_eval
 import hmac
 
 from prompts.openai_summarise import system_prompt, user_prompt
-from src.collection.query_collection import (
+from src.collection_utils.query_collection import (
     filter_search,
     get_semantically_similar_results,
 )
@@ -146,6 +146,7 @@ def main():
              This tool brings together feedback from users submitted via the \
              'report a problem on this page' link and smart survey responses."
     )
+    st.text("")
 
     # Sidebar
     st.sidebar.image(sidebar_image_path, use_column_width=True)
@@ -417,6 +418,7 @@ def main():
                 "Identified and summarised by AI technology. Please verify the outputs with other data sources to ensure accuracy of information."
             )
             st.write(summary["open_summary"])
+            st.text("")
         elif get_summary and len(filtered_list) <= min_records_for_summarisation:
             st.write(
                 "There's not enough feedback matching your search criteria to identify top themes.\n\
