@@ -4,8 +4,6 @@ __pycache__
 *.pyd
 .Python
 *.env
-# collection
-# data
 evaluation
 notebooks
 qdrant_data
