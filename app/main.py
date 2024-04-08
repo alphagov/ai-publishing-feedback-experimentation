@@ -2,6 +2,7 @@ import datetime
 import json
 import os
 import subprocess
+import logging
 
 import streamlit as st
 from dotenv import load_dotenv
@@ -9,6 +10,7 @@ from qdrant_client import QdrantClient
 from sentence_transformers import SentenceTransformer
 from streamlit_js_eval import streamlit_js_eval
 import hmac
+from streamlit.server.server import Server
 
 from prompts.openai_summarise import system_prompt, user_prompt
 from src.collection_utils.query_collection import (
@@ -37,6 +39,9 @@ st.set_page_config(
                     For assistance, please contact the team via Slack at #ai-govuk.",
     },
 )
+
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 
 # Load the model only once, at the start of the app.
@@ -82,6 +87,22 @@ def get_filters_metadata():
         print(f"Error running metadata script: {e}")
 
 
+@st.cache_resource()
+def get_session_id():
+    # Access the current session.
+    session_id = None
+    ctx = st.report_thread.get_report_ctx()
+    if ctx:
+        # Get the server instance to access sessions.
+        this_server = Server.get_current()
+        if this_server:
+            session_info = this_server._session_info_by_id.get(ctx.session_id)
+            if session_info:
+                session_id = session_info.session.id
+
+    return session_id
+
+
 client = load_qdrant_client()
 model = load_model(HF_MODEL_NAME)
 
@@ -124,6 +145,9 @@ def check_password():
 
 
 def main():
+    session_id = get_session_id()
+    logger.info(f"Session {session_id} did something important.")
+
     if not check_password():
         st.stop()  # Do not continue if check_password is not True.
 
