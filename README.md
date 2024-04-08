@@ -32,6 +32,8 @@ To run the build, you can use the following command from the root directory: `gc
 
 To deploy to Cloud Run locally (avoiding the requirement to type lots of environment variables into the cloud console), you can use the command found in `deploy_to_cloudrun.sh`. This script will deploy the image to Cloud Run and set the environment variables for you. Run this file by typing `bash deploy_to_cloudrun.sh` in the root directory.
 
+_Troubleshooting: if the service is deployed but the application fails saying that it cannot find a folder/file, then you can use `gcloud builds submit --config cloudbuild_ls.yaml`. This takes the image pushed to Artifact Registry, opens it, and runs a command to recursively list the files in the container. This can help you debug what files are missing. This will not download the image to your local machine which saves space (~8GB) but will still take a while to run._
+
 ### A note on Poetry
 
 To install dependencies into a new environment, run `poetry install`. This will create an environment if one does not already exist, following the naming convention "project-name-py3.XX".
