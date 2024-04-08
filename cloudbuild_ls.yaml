@@ -1,0 +1,3 @@
+steps:
+- name: 'gcr.io/cloud-builders/docker'
+  args: ['run', '--entrypoint', '/bin/sh', 'europe-west2-docker.pkg.dev/govuk-ai-publishing/feedback-dashboard/app:latest', '-c', 'ls -R']

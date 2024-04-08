@@ -9,6 +9,7 @@ RUN pip install poetry
 
 # Copy the app directory contents into the container at /app
 COPY . /app
+COPY prompts /app/
 
 # Use Poetry to install the dependencies from pyproject.toml and poetry.lock files
 # Assume pyproject.toml and optionally poetry.lock exists and define the project's dependencies
