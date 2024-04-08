@@ -10,7 +10,6 @@ from qdrant_client import QdrantClient
 from sentence_transformers import SentenceTransformer
 from streamlit_js_eval import streamlit_js_eval
 import hmac
-from streamlit.server.server import Server
 
 from prompts.openai_summarise import system_prompt, user_prompt
 from src.collection_utils.query_collection import (
@@ -91,14 +90,19 @@ def get_filters_metadata():
 def get_session_id():
     # Access the current session.
     session_id = None
-    ctx = st.report_thread.get_report_ctx()
+
+    # from streamlit.runtime.scriptrunner.script_run_context import get_script_run_ctx
+    # ctx = get_script_run_ctx()
+    ctx = st.runtime.scriptrunner.script_run_context.get_script_run_ctx()
     if ctx:
         # Get the server instance to access sessions.
-        this_server = Server.get_current()
-        if this_server:
-            session_info = this_server._session_info_by_id.get(ctx.session_id)
-            if session_info:
-                session_id = session_info.session.id
+        session_id = ctx.session_id
+        # this_server = Server.get_current_server()
+        # session_info = this_server._get_session_info(session_id)
+        # if this_server:
+        #     session_info = this_server._session_info_by_id.get(ctx.session_id)
+        #     if session_info:
+        #         session_id = session_info.session.id
 
     return session_id
 
@@ -146,7 +150,7 @@ def check_password():
 
 def main():
     session_id = get_session_id()
-    logger.info(f"Session {session_id} did something important.")
+    logger.info(f"Session {session_id}...")
 
     if not check_password():
         st.stop()  # Do not continue if check_password is not True.
