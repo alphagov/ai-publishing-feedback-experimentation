@@ -10,7 +10,7 @@ TODO
 
 ### Running the application locally using Docker compose
 
-Note: This will run the streamlit app, the Qdrant database, and the evaluation script on your local machine
+Note: This will run the Streamlit app, the Qdrant database, and the evaluation script on your local machine.
 
 To run the application, make sure you have docker and docker-compose installed and have the relevant environment variables stored (speak with the AI team). Then run `docker-compose up`.
 
@@ -18,19 +18,19 @@ You will also need to download data to fill the dashboard dropdowns. The code to
 
 ### Running the application locally using a remote Qdrant database in Compute Engine
 
-Note: This will run ONLY the streamlit app on your local machine
+Note: This will run ONLY the Streamlit app on your local machine.
 
 To run the application locally using a remote Qdrant database in Compute engine you can simply run `streamlit run app/main.py` from the root directory. This will start the application on your local machine and connect to the remote Qdrant database IF you have the correct environment variables set. The environment variables are stored in the `compute_engine.env` file in the root directory.
 
-### Using Cloud Build to deploy the application to Cloud Run
+### Deploy the application to Cloud Run with Cloud Build
 
-Note: This will deploy the streamlit app to Cloud Run
+Note: This will deploy the Streamlit app to Cloud Run using Cloud Build.
 
-To deploy the application to Cloud Run, you can use Cloud Build. The `cloudbuild.yaml` and `Dockerfile` files in the root directory contain the steps to build the container image and deploy it to Cloud Run.
+Check that the root directory contains a `cloudbuild.yaml` and a `Dockerfile`. These files define the build process and app requirements.
 
-To run the build, you can use the following command from the root directory: `gcloud builds submit --config cloudbuild.yaml` The resulting build might take a while because it's using buildx to build the image. This image will be pushed to the Google Artifact Registry and then can be deployed to Cloud Run.
+1. **Build the Image**: From the root directory, run `gcloud builds submit --config cloudbuild.yaml`. This command builds the app's container image using Cloud Build, based on instructions in `cloudbuild.yaml`, and pushes it to Google Artifact Registry.
 
-To deploy to Cloud Run locally (avoiding the requirement to type lots of environment variables into the cloud console), you can use the command found in `deploy_to_cloudrun.sh`. This script will deploy the image to Cloud Run and set the environment variables for you. Run this file by typing `bash deploy_to_cloudrun.sh` in the root directory.
+2. **Deploy to Cloud Run**: Instead of manually setting environment variables in the cloud console, run the `deploy_to_cloudrun.sh` script locally using `bash deploy_to_cloudrun.sh`. This script automates the deployment to Cloud Run, including setting environment variables.
 
 _Troubleshooting: if the service is deployed but the application fails saying that it cannot find a folder/file, then you can use `gcloud builds submit --config cloudbuild_ls.yaml`. This takes the image pushed to Artifact Registry, opens it, and runs a command to recursively list the files in the container. This can help you debug what files are missing. This will not download the image to your local machine which saves space (~8GB) but will still take a while to run._
 
