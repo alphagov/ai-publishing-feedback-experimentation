@@ -8,6 +8,7 @@ from dotenv import load_dotenv
 from qdrant_client import QdrantClient
 from sentence_transformers import SentenceTransformer
 from streamlit_js_eval import streamlit_js_eval
+import hmac
 
 from prompts.openai_summarise import system_prompt, user_prompt
 from src.collection.query_collection import (
@@ -26,6 +27,7 @@ FILTER_OPTIONS_PATH = os.getenv("FILTER_OPTIONS_PATH")
 HF_MODEL_NAME = os.getenv("HF_MODEL_NAME")
 QDRANT_HOST = os.getenv("QDRANT_HOST")  # "localhost" if running locally
 QDRANT_PORT = os.getenv("QDRANT_PORT")
+STREAMLIT_PASSWORD = os.getenv("STREAMLIT_PASSWORD")
 
 st.set_page_config(
     layout="wide",
@@ -95,7 +97,36 @@ get_filters_metadata()
 filter_options = load_filter_dropdown_values(FILTER_OPTIONS_PATH)
 
 
+@st.cache_resource(experimental_allow_widgets=True)
+def password_entered():
+    """Checks whether a password entered by the user is correct."""
+    if hmac.compare_digest(st.session_state["password"], STREAMLIT_PASSWORD):
+        st.session_state["password_correct"] = True
+        del st.session_state["password"]  # Don't store the password.
+    else:
+        st.session_state["password_correct"] = False
+
+
+@st.cache_resource(experimental_allow_widgets=True)
+def check_password():
+    """Returns `True` if the user had the correct password."""
+    # Return True if the password is validated.
+    if st.session_state.get("password_correct", False):
+        return True
+
+    # Show input for password.
+    st.text_input(
+        "Password", type="password", on_change=password_entered, key="password"
+    )
+    if "password_correct" in st.session_state:
+        st.error("😕 Password incorrect")
+    return False
+
+
 def main():
+    if not check_password():
+        st.stop()  # Do not continue if check_password is not True.
+
     # Apply custom css elements
     with open("app/style/custom.css", "r") as file:
         st.sidebar.markdown(f"<style>{file.read()}</style>", unsafe_allow_html=True)
