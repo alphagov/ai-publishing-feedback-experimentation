@@ -14,7 +14,7 @@ Note: This will run the streamlit app, the Qdrant database, and the evaluation s
 
 To run the application, make sure you have docker and docker-compose installed and have the relevant environment variables stored (speak with the AI team). Then run `docker-compose up`.
 
-You will also need to download data to fill the dashboard dropdowns. The code to do this can be found in `notebooks/get_feedback_dimensions.ipynb`
+You will also need to download data to fill the dashboard dropdowns. The script `app/get_metadata_for_filters.py` does this and is run in `app/main.py`.
 
 ### Running the application locally using a remote Qdrant database in Compute Engine
 
