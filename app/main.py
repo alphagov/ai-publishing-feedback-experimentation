@@ -3,13 +3,15 @@ import json
 import os
 import subprocess
 import logging
+import yaml
+from yaml.loader import SafeLoader
 
 import streamlit as st
+import streamlit_authenticator as stauth
 from dotenv import load_dotenv
 from qdrant_client import QdrantClient
 from sentence_transformers import SentenceTransformer
 from streamlit_js_eval import streamlit_js_eval
-import hmac
 
 from prompts.openai_summarise import system_prompt, user_prompt
 from src.collection_utils.query_collection import (
@@ -39,8 +41,21 @@ st.set_page_config(
     },
 )
 
+# Configure logger
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
+
+# Configure auth
+with open(".config/auth_config.yaml") as file:
+    auth_config = yaml.load(file, Loader=SafeLoader)
+
+authenticator = stauth.Authenticate(
+    auth_config["credentials"],
+    auth_config["cookie"]["name"],
+    auth_config["cookie"]["key"],
+    auth_config["cookie"]["expiry_days"],
+    auth_config["pre-authorized"],
+)
 
 
 # Load the model only once, at the start of the app.
@@ -86,24 +101,17 @@ def get_filters_metadata():
         print(f"Error running metadata script: {e}")
 
 
-@st.cache_resource()
 def get_session_id():
-    # Access the current session.
-    session_id = None
+    """Get session id from context.
 
-    # from streamlit.runtime.scriptrunner.script_run_context import get_script_run_ctx
-    # ctx = get_script_run_ctx()
+    Returns:
+        str: uniquesession id
+    """
+    session_id = None
     ctx = st.runtime.scriptrunner.script_run_context.get_script_run_ctx()
     if ctx:
         # Get the server instance to access sessions.
         session_id = ctx.session_id
-        # this_server = Server.get_current_server()
-        # session_info = this_server._get_session_info(session_id)
-        # if this_server:
-        #     session_info = this_server._session_info_by_id.get(ctx.session_id)
-        #     if session_info:
-        #         session_id = session_info.session.id
-
     return session_id
 
 
@@ -122,356 +130,354 @@ get_filters_metadata()
 filter_options = load_filter_dropdown_values(FILTER_OPTIONS_PATH)
 
 
-@st.cache_resource(experimental_allow_widgets=True)
-def password_entered():
-    """Checks whether a password entered by the user is correct."""
-    if hmac.compare_digest(st.session_state["password"], STREAMLIT_PASSWORD):
-        st.session_state["password_correct"] = True
-        del st.session_state["password"]  # Don't store the password.
-    else:
-        st.session_state["password_correct"] = False
-
-
-@st.cache_resource(experimental_allow_widgets=True)
-def check_password():
-    """Returns `True` if the user had the correct password."""
-    # Return True if the password is validated.
-    if st.session_state.get("password_correct", False):
-        return True
-
-    # Show input for password.
-    st.text_input(
-        "Password", type="password", on_change=password_entered, key="password"
-    )
-    if "password_correct" in st.session_state:
-        st.error("😕 Password incorrect")
-    return False
-
-
 def main():
-    session_id = get_session_id()
-    logger.info(f"Session {session_id}...")
+    # Run authenticator
+    authenticator.login(max_login_attempts=5)
 
-    if not check_password():
-        st.stop()  # Do not continue if check_password is not True.
+    if st.session_state["authentication_status"]:
+        authenticator.logout()
+        st.write(f'Welcome *{st.session_state["name"]}!*')
 
-    # Apply custom css elements
-    with open("app/style/custom.css", "r") as file:
-        st.sidebar.markdown(f"<style>{file.read()}</style>", unsafe_allow_html=True)
+        browser_session_id = st.session_state["init"]["feedback_ai_session"][-8:]
 
-    sidebar_image_path = "app/style/govuk-feedback-prototype-sidebar.png"
-    # Create a container for the banner
-    with st.container():
-        # Use markdown with inline CSS/HTML
-        with open("app/style/banner.html", "r", encoding="utf-8") as file:
-            html_content = file.read()
-            st.markdown(html_content, unsafe_allow_html=True)
+        session_id = get_session_id()[-32:]
+        logger.info(f"user_id:{browser_session_id} session_id:{session_id}...")
+        # Apply custom css elements
+        with open("app/style/custom.css", "r") as file:
+            st.sidebar.markdown(f"<style>{file.read()}</style>", unsafe_allow_html=True)
 
-    # Main content area
-    st.header("Explore user feedback")
-    st.write(
-        "Explore user feedback comments, including themes across topics and pages. \
-             This tool brings together feedback from users submitted via the \
-             'report a problem on this page' link and smart survey responses."
-    )
-    st.text("")
+        sidebar_image_path = "app/style/govuk-feedback-prototype-sidebar.png"
+        # Create a container for the banner
+        with st.container():
+            # Use markdown with inline CSS/HTML
+            with open("app/style/banner.html", "r", encoding="utf-8") as file:
+                html_content = file.read()
+                st.markdown(html_content, unsafe_allow_html=True)
 
-    # Sidebar
-    st.sidebar.image(sidebar_image_path, use_column_width=True)
-    st.sidebar.header("Explore themes in user feedback\n")
-
-    st.sidebar.write(
-        "Search by keyword, URL(s), urgency, organisation and/or content type. Use AI summarisation to identify themes in user comments."
-    )
-
-    st.sidebar.subheader("AI summarisation")
-
-    left, right = st.sidebar.columns(2)
-    with left:
-        get_summary = st.checkbox(
-            "Summarise relevant feedback",
-            value=False,
-            key="get_summary",
+        # Main content area
+        st.header("Explore user feedback")
+        st.write(
+            "Explore user feedback comments, including themes across topics and pages. \
+                This tool brings together feedback from users submitted via the \
+                'report a problem on this page' link and smart survey responses."
         )
-    with right:
-        remove_spam = st.checkbox(
-            "Include comments marked as spam",
-            value=False,
-            key="remove_spam",
+        st.text("")
+
+        # Sidebar
+        st.sidebar.image(sidebar_image_path, use_column_width=True)
+        st.sidebar.header("Explore themes in user feedback\n")
+
+        st.sidebar.write(
+            "Search by keyword, URL(s), urgency, organisation and/or content type. Use AI summarisation to identify themes in user comments."
         )
 
-    st.sidebar.subheader("Set date range (optional)")
+        st.sidebar.subheader("AI summarisation")
 
-    # Date range slider in the sidebar.
-    today = datetime.date.today()
-    n_days_default = 90
-    st.sidebar.write(f"Showing data from past {n_days_default} days as default view.")
+        left, right = st.sidebar.columns(2)
+        with left:
+            get_summary = st.checkbox(
+                "Summarise relevant feedback",
+                value=False,
+                key="get_summary",
+            )
+        with right:
+            remove_spam = st.checkbox(
+                "Include comments marked as spam",
+                value=False,
+                key="remove_spam",
+            )
 
-    col1, col2 = st.sidebar.columns(2)
-    with col1:
-        start_date = st.date_input(
-            "Start date:",
-            today - datetime.timedelta(days=n_days_default),
-            format="DD/MM/YYYY",
+        st.sidebar.subheader("Set date range (optional)")
+
+        # Date range slider in the sidebar.
+        today = datetime.date.today()
+        n_days_default = 90
+        st.sidebar.write(
+            f"Showing data from past {n_days_default} days as default view."
         )
-    with col2:
-        end_date = st.date_input("End date:", today, format="DD/MM/YYYY")
 
-    st.sidebar.divider()
-
-    # Free text box for one search term
-    st.sidebar.header("Explore by keyword or phrase\n")
-    search_term_input = st.sidebar.text_input(
-        "For example, tax, driving licence, Universal Credit", key="search_term_input"
-    )
-
-    search_terms = search_term_input.strip().lower()
-
-    st.sidebar.header("By URL(s)")
-
-    # List of all pages for dropdown and filtering
-    all_pages = filter_options["subject_page_path"]
-
-    user_input_pages = st.sidebar.multiselect(
-        "Start typing and select the URL from dropdown\nFor example, /vat-rate or /browse/tax",
-        all_pages,
-        # max_selections=4,
-        default=[],
-        key="user_input_pages",
-    )
-    # File upload for list of URLs
-    uploaded_url_file = st.sidebar.file_uploader(
-        "Or bulk upload a list of URLs using a CSV or TXT file. Mac file limit 200MB per file",
-        type=["txt", "csv"],
-        key="uploaded_url_file",
-    )
-
-    include_child_pages = True
-
-    if uploaded_url_file is not None:
-        # Determine the file type and process accordingly
-        if uploaded_url_file.name.endswith(".txt"):
-            user_input_pages = process_txt_file(uploaded_url_file) + user_input_pages
-        elif uploaded_url_file.name.endswith(".csv"):
-            user_input_pages = process_csv_file(uploaded_url_file) + user_input_pages
-        else:
-            st.error("Unsupported file type. Please upload a .txt or .csv file.")
-            return
-
-    # Find all urls in filter_options["urls"] that start with urls in matched_page_paths
-    if user_input_pages and include_child_pages:
-        matched_page_paths = [
-            url
-            for url in all_pages
-            if url and any(url.startswith(path) for path in user_input_pages)
-        ]
-    elif not include_child_pages:
-        matched_page_paths = user_input_pages
-    else:
-        matched_page_paths = []
-
-    st.sidebar.divider()
-    st.sidebar.header("Narrow your search\n")
-    st.sidebar.subheader("By urgency")
-
-    urgency_user_input = st.sidebar.multiselect(
-        "See feedback by high, medium, low and unknown urgency rating (Urgency inferred by AI).",
-        ["Low", "Medium", "High", "Unknown"],
-        max_selections=4,
-        key="urgency_user_input",
-    )
-
-    # translate urgency rating to human readable
-    urgency_input = [urgency_translate[value] for value in urgency_user_input]
-
-    st.sidebar.subheader("By publishing organisation")
-    org_input = st.sidebar.multiselect(
-        "Select publishing organisation:",
-        filter_options["organisation"],
-        default=[],
-        key="org_input",
-    )
-
-    st.sidebar.subheader("By content type")
-    doc_type_input = st.sidebar.multiselect(
-        "For example, guide, detailed guide, consultation",
-        filter_options["document_type"],
-        default=[],
-        key="doc_type_input",
-    )
-
-    # Add buttons to search and clear filters
-    st.sidebar.text("")
-    search_button = st.sidebar.button(
-        "Explore feedback",
-        key="search_button",
-        type="primary",
-        help="Click to search",
-        use_container_width=True,
-    )
-
-    clear_filters = st.sidebar.button(
-        "Clear all filters",
-        key="clear_filters",
-        type="secondary",
-        help="Reset search parameters",
-        use_container_width=True,
-    )
-
-    if clear_filters:
-        # Reload webpage to clear all filters
-        streamlit_js_eval(js_expressions="parent.window.location.reload()")
-
-    st.sidebar.divider()
-
-    st.sidebar.markdown(
-        "_**Similarity score** is calculated by an AI model. \
-                     The higher the score, the more similar the feedback \
-                     content is to the search term or phrase._"
-    )
-
-    st.sidebar.markdown(
-        "_**Urgency** is inferred by an AI model via the OpenAI API. \
-                     It should reflect the urgency of the problem from \
-                     the point of view of the publishing organisation._"
-    )
-    # convert to int if not None, else keep as None
-    urgency_input = [int(urgency) if urgency else None for urgency in urgency_input]
-
-    spam_filter = ["not spam"] if remove_spam else ["spam", "not spam", ""]
-
-    filter_dict = {
-        "url": matched_page_paths,
-        "urgency": urgency_input,
-        "primary_department": org_input,
-        "document_type": doc_type_input,
-        "spam_classification": spam_filter,
-    }
-
-    if search_button:
-        if len(search_term_input) > 0:
-            query_embedding = model.encode(search_terms)
-            # Call the search function with filters
-            print(f"Running semantic search on {COLLECTION_NAME}...")
-            search_results = get_semantically_similar_results(
-                client=client,
-                collection_name=COLLECTION_NAME,
-                query_embedding=query_embedding,
-                score_threshold=similarity_threshold,
-                filter_dict=filter_dict,
+        col1, col2 = st.sidebar.columns(2)
+        with col1:
+            start_date = st.date_input(
+                "Start date:",
+                today - datetime.timedelta(days=n_days_default),
+                format="DD/MM/YYYY",
             )
-            results = [dict(result) for result in search_results]
-            print(f"Num results: {len(results)}")
-        elif (
-            len(search_term_input) == 0
-            and any(len(filter_dict[key]) > 0 for key in ["url", "primary_department"])
-            > 0
-        ):
-            st.write("Running filter search...")
-            # Call the filter function
-            search_results = filter_search(
-                client=client, collection_name=COLLECTION_NAME, filter_dict=filter_dict
-            )
-            data, _ = search_results
-            results = [dict(result) for result in data]
-        else:
-            st.write(
-                "Please supply a search term or URL(s) and hit 'Explore Feedback' to see results..."
-            )
-            st.stop()
+        with col2:
+            end_date = st.date_input("End date:", today, format="DD/MM/YYYY")
 
-        filtered_list = []
-        # Extract and append key-value pairs
-        for result in results:
-            payload = result["payload"]
-            for key in payload:
-                if key in renaming_dict:
-                    for (
-                        key,
-                        value,
-                    ) in (
-                        renaming_dict.items()
-                    ):  # Check if the key exists in keys_to_extract
-                        result[value] = payload[key]
+        st.sidebar.divider()
 
-            result_ordered = {key: result[key] for key in renaming_dict.values()}
-            result_ordered["Similarity score"] = (
-                result["score"] if "score" in result else float(1)
-            )
+        # Free text box for one search term
+        st.sidebar.header("Explore by keyword or phrase\n")
+        search_term_input = st.sidebar.text_input(
+            "For example, tax, driving licence, Universal Credit",
+            key="search_term_input",
+        )
 
-            result_ordered["created_date"] = datetime.datetime.strptime(
-                result_ordered[renaming_dict["created"]], "%Y-%m-%d"
-            ).date()
+        search_terms = search_term_input.strip().lower()
 
-            # Reformat urgency to human readable
-            inverted_urgency_translate = {v: k for k, v in urgency_translate.items()}
-            numeric_urgency = str(result_ordered["Urgency"])
-            if numeric_urgency in inverted_urgency_translate:
-                result_ordered["Urgency"] = inverted_urgency_translate[numeric_urgency]
+        st.sidebar.header("By URL(s)")
 
-            # Filter on date
-            if (
-                result_ordered["Similarity score"] > similarity_threshold
-                and start_date <= result_ordered["created_date"] <= end_date
-            ):
-                result_ordered.pop("created_date")
-                filtered_list.append(result_ordered)
+        # List of all pages for dropdown and filtering
+        all_pages = filter_options["subject_page_path"]
 
-            # Reformat similarity score as percentage, to no decimal places
-            result_ordered[
-                "Similarity score"
-            ] = f"{result_ordered['Similarity score']*100:.0f}%"
+        user_input_pages = st.sidebar.multiselect(
+            "Start typing and select the URL from dropdown\nFor example, /vat-rate or /browse/tax",
+            all_pages,
+            # max_selections=4,
+            default=[],
+            key="user_input_pages",
+        )
+        # File upload for list of URLs
+        uploaded_url_file = st.sidebar.file_uploader(
+            "Or bulk upload a list of URLs using a CSV or TXT file. Mac file limit 200MB per file",
+            type=["txt", "csv"],
+            key="uploaded_url_file",
+        )
 
-        # Topic summary where > n records returned
-        if get_summary and len(filtered_list) > min_records_for_summarisation:
-            available_feedback_for_context = [
-                record[renaming_dict["feedback"]] for record in filtered_list
+        include_child_pages = True
+
+        if uploaded_url_file is not None:
+            # Determine the file type and process accordingly
+            if uploaded_url_file.name.endswith(".txt"):
+                user_input_pages = (
+                    process_txt_file(uploaded_url_file) + user_input_pages
+                )
+            elif uploaded_url_file.name.endswith(".csv"):
+                user_input_pages = (
+                    process_csv_file(uploaded_url_file) + user_input_pages
+                )
+            else:
+                st.error("Unsupported file type. Please upload a .txt or .csv file.")
+                return
+
+        # Find all urls in filter_options["urls"] that start with urls in matched_page_paths
+        if user_input_pages and include_child_pages:
+            matched_page_paths = [
+                url
+                for url in all_pages
+                if url and any(url.startswith(path) for path in user_input_pages)
             ]
-            # Limit the number of feedback records to summarise, if number exceeds max_context_records
-            num_feedback_for_context = (
-                len(available_feedback_for_context)
-                if len(available_feedback_for_context) <= max_context_records
-                else max_context_records
-            )
-            summary = create_openai_summary(
-                system_prompt,
-                user_prompt,
-                available_feedback_for_context[:num_feedback_for_context],
-                OPENAI_API_KEY,
-            )
-            st.subheader(
-                f"Top themes based on {num_feedback_for_context} records of user feedback"
-            )
-            st.write(
-                "Identified and summarised by AI technology. Please verify the outputs with other data sources to ensure accuracy of information."
-            )
-            st.write(summary["open_summary"])
-            st.text("")
-        elif get_summary and len(filtered_list) <= min_records_for_summarisation:
-            st.write(
-                "There's not enough feedback matching your search criteria to identify top themes.\n\
-                Try searching with fewer criteria or across more URLs to increase the likelihood of results."
-            )
-        elif not get_summary and len(filtered_list) > min_records_for_summarisation:
-            st.write(
-                "No summary requested. Check box to get an AI-generated summary of relevant feedback."
-            )
+        elif not include_child_pages:
+            matched_page_paths = user_input_pages
         else:
-            st.write(
-                "No summary requested. Insufficient feedback records for summarisation."
+            matched_page_paths = []
+
+        st.sidebar.divider()
+        st.sidebar.header("Narrow your search\n")
+        st.sidebar.subheader("By urgency")
+
+        urgency_user_input = st.sidebar.multiselect(
+            "See feedback by high, medium, low and unknown urgency rating (Urgency inferred by AI).",
+            ["Low", "Medium", "High", "Unknown"],
+            max_selections=4,
+            key="urgency_user_input",
+        )
+
+        # translate urgency rating to human readable
+        urgency_input = [urgency_translate[value] for value in urgency_user_input]
+
+        st.sidebar.subheader("By publishing organisation")
+        org_input = st.sidebar.multiselect(
+            "Select publishing organisation:",
+            filter_options["organisation"],
+            default=[],
+            key="org_input",
+        )
+
+        st.sidebar.subheader("By content type")
+        doc_type_input = st.sidebar.multiselect(
+            "For example, guide, detailed guide, consultation",
+            filter_options["document_type"],
+            default=[],
+            key="doc_type_input",
+        )
+
+        # Add buttons to search and clear filters
+        st.sidebar.text("")
+        search_button = st.sidebar.button(
+            "Explore feedback",
+            key="search_button",
+            type="primary",
+            help="Click to search",
+            use_container_width=True,
+        )
+
+        clear_filters = st.sidebar.button(
+            "Clear all filters",
+            key="clear_filters",
+            type="secondary",
+            help="Reset search parameters",
+            use_container_width=True,
+        )
+
+        if clear_filters:
+            # Reload webpage to clear all filters
+            streamlit_js_eval(js_expressions="parent.window.location.reload()")
+
+        st.sidebar.divider()
+
+        st.sidebar.markdown(
+            "_**Similarity score** is calculated by an AI model. \
+                        The higher the score, the more similar the feedback \
+                        content is to the search term or phrase._"
+        )
+
+        st.sidebar.markdown(
+            "_**Urgency** is inferred by an AI model via the OpenAI API. \
+                        It should reflect the urgency of the problem from \
+                        the point of view of the publishing organisation._"
+        )
+        # convert to int if not None, else keep as None
+        urgency_input = [int(urgency) if urgency else None for urgency in urgency_input]
+
+        spam_filter = ["not spam"] if remove_spam else ["spam", "not spam", ""]
+
+        filter_dict = {
+            "url": matched_page_paths,
+            "urgency": urgency_input,
+            "primary_department": org_input,
+            "document_type": doc_type_input,
+            "spam_classification": spam_filter,
+        }
+
+        if search_button:
+            if len(search_term_input) > 0:
+                query_embedding = model.encode(search_terms)
+                # Call the search function with filters
+                print(f"Running semantic search on {COLLECTION_NAME}...")
+                search_results = get_semantically_similar_results(
+                    client=client,
+                    collection_name=COLLECTION_NAME,
+                    query_embedding=query_embedding,
+                    score_threshold=similarity_threshold,
+                    filter_dict=filter_dict,
+                )
+                results = [dict(result) for result in search_results]
+                print(f"Num results: {len(results)}")
+            elif (
+                len(search_term_input) == 0
+                and any(
+                    len(filter_dict[key]) > 0 for key in ["url", "primary_department"]
+                )
+                > 0
+            ):
+                st.write("Running filter search...")
+                # Call the filter function
+                search_results = filter_search(
+                    client=client,
+                    collection_name=COLLECTION_NAME,
+                    filter_dict=filter_dict,
+                )
+                data, _ = search_results
+                results = [dict(result) for result in data]
+            else:
+                st.write(
+                    "Please supply a search term or URL(s) and hit 'Explore Feedback' to see results..."
+                )
+                st.stop()
+
+            filtered_list = []
+            # Extract and append key-value pairs
+            for result in results:
+                payload = result["payload"]
+                for key in payload:
+                    if key in renaming_dict:
+                        for (
+                            key,
+                            value,
+                        ) in (
+                            renaming_dict.items()
+                        ):  # Check if the key exists in keys_to_extract
+                            result[value] = payload[key]
+
+                result_ordered = {key: result[key] for key in renaming_dict.values()}
+                result_ordered["Similarity score"] = (
+                    result["score"] if "score" in result else float(1)
+                )
+
+                result_ordered["created_date"] = datetime.datetime.strptime(
+                    result_ordered[renaming_dict["created"]], "%Y-%m-%d"
+                ).date()
+
+                # Reformat urgency to human readable
+                inverted_urgency_translate = {
+                    v: k for k, v in urgency_translate.items()
+                }
+                numeric_urgency = str(result_ordered["Urgency"])
+                if numeric_urgency in inverted_urgency_translate:
+                    result_ordered["Urgency"] = inverted_urgency_translate[
+                        numeric_urgency
+                    ]
+
+                # Filter on date
+                if (
+                    result_ordered["Similarity score"] > similarity_threshold
+                    and start_date <= result_ordered["created_date"] <= end_date
+                ):
+                    result_ordered.pop("created_date")
+                    filtered_list.append(result_ordered)
+
+                # Reformat similarity score as percentage, to no decimal places
+                result_ordered[
+                    "Similarity score"
+                ] = f"{result_ordered['Similarity score']*100:.0f}%"
+
+            # Topic summary where > n records returned
+            if get_summary and len(filtered_list) > min_records_for_summarisation:
+                available_feedback_for_context = [
+                    record[renaming_dict["feedback"]] for record in filtered_list
+                ]
+                # Limit the number of feedback records to summarise, if number exceeds max_context_records
+                num_feedback_for_context = (
+                    len(available_feedback_for_context)
+                    if len(available_feedback_for_context) <= max_context_records
+                    else max_context_records
+                )
+                summary = create_openai_summary(
+                    system_prompt,
+                    user_prompt,
+                    available_feedback_for_context[:num_feedback_for_context],
+                    OPENAI_API_KEY,
+                )
+                st.subheader(
+                    f"Top themes based on {num_feedback_for_context} records of user feedback"
+                )
+                st.write(
+                    "Identified and summarised by AI technology. Please verify the outputs with other data sources to ensure accuracy of information."
+                )
+                st.write(summary["open_summary"])
+                st.text("")
+            elif get_summary and len(filtered_list) <= min_records_for_summarisation:
+                st.write(
+                    "There's not enough feedback matching your search criteria to identify top themes.\n\
+                    Try searching with fewer criteria or across more URLs to increase the likelihood of results."
+                )
+            elif not get_summary and len(filtered_list) > min_records_for_summarisation:
+                st.write(
+                    "No summary requested. Check box to get an AI-generated summary of relevant feedback."
+                )
+            else:
+                st.write(
+                    "No summary requested. Insufficient feedback records for summarisation."
+                )
+            st.subheader(
+                f"{len(filtered_list)} user feedback comments based on your search criteria"
             )
-        st.subheader(
-            f"{len(filtered_list)} user feedback comments based on your search criteria"
-        )
-        st.dataframe(
-            filtered_list,
-            column_config={
-                "Date": st.column_config.DateColumn(
-                    "Date",
-                    format="DD/MM/YYYY",
-                ),
-            },
-        )
+            st.dataframe(
+                filtered_list,
+                column_config={
+                    "Date": st.column_config.DateColumn(
+                        "Date",
+                        format="DD/MM/YYYY",
+                    ),
+                },
+            )
+    elif st.session_state["authentication_status"] is False:
+        st.error("Username/password is incorrect")
+    elif st.session_state["authentication_status"] is None:
+        st.warning("Please enter your username and password")
 
 
 if __name__ == "__main__":

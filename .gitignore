@@ -32,3 +32,5 @@ prompts/*
 models/*
 
 deploy_to_cloudrun.sh
+
+*auth_config*
