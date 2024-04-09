@@ -1,9 +1,8 @@
 import os
-
+import pickle
 from src.collection.evaluate_collection import (
     assess_retrieval_accuracy,
     get_data_for_evaluation,
-    get_all_regex_ids,
     assess_scroll_retrieval,
 )
 from src.utils.utils import load_qdrant_client, load_config
@@ -25,13 +24,18 @@ def main():
     # Initialize a Qdrant client
     client = load_qdrant_client(QDRANT_HOST, port=QDRANT_PORT)
 
-    # Get the data for evaluation
+    # Read in the data for evaluation
     data = get_data_for_evaluation(
         project_id=PUBLISHING_PROJECT_ID,
         evaluation_table=EVALUATION_TABLE,
     )
 
-    regex_ids = get_all_regex_ids(data)
+    # Read data_regex_counts.pkl
+    with open("data/regex_counts.pkl", "rb") as f:
+        regex_counts = pickle.load(f)
+
+    with open("data/regex_ids.pkl", "rb") as f:
+        regex_ids = pickle.load(f)
 
     # Assess the retrieval accuracy
     ss_results = assess_retrieval_accuracy(
