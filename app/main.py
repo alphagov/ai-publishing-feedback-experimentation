@@ -1,17 +1,17 @@
 import datetime
 import json
+import logging
 import os
 import subprocess
-import logging
-import yaml
-from yaml.loader import SafeLoader
 
 import streamlit as st
 import streamlit_authenticator as stauth
+import yaml
 from dotenv import load_dotenv
 from qdrant_client import QdrantClient
 from sentence_transformers import SentenceTransformer
 from streamlit_js_eval import streamlit_js_eval
+from yaml.loader import SafeLoader
 
 from prompts.openai_summarise import system_prompt, user_prompt
 from src.collection_utils.query_collection import (
@@ -28,7 +28,7 @@ COLLECTION_NAME = os.getenv("COLLECTION_NAME")
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 FILTER_OPTIONS_PATH = os.getenv("FILTER_OPTIONS_PATH")
 HF_MODEL_NAME = os.getenv("HF_MODEL_NAME")
-QDRANT_HOST = os.getenv("QDRANT_HOST")  # "localhost" if running locally
+QDRANT_HOST = os.getenv("QDRANT_HOST_EXTERNAL")  # "localhost" if running locally
 QDRANT_PORT = os.getenv("QDRANT_PORT")
 STREAMLIT_PASSWORD = os.getenv("STREAMLIT_PASSWORD")
 
@@ -134,15 +134,12 @@ def main():
     # Run authenticator
     authenticator.login(max_login_attempts=5)
 
+    # Check if user is authenticated, serve logout widget if so.
     if st.session_state["authentication_status"]:
-        authenticator.logout()
+        logger.info("User authenticated successfully")
         st.write(f'Welcome *{st.session_state["name"]}!*')
 
-        browser_session_id = st.session_state["init"]["feedback_ai_session"][-8:]
-
-        session_id = get_session_id()[-32:]
-        logger.info(f"user_id:{browser_session_id} session_id:{session_id}...")
-        # Apply custom css elements
+        # Apply custom css elements in sidebar
         with open("app/style/custom.css", "r") as file:
             st.sidebar.markdown(f"<style>{file.read()}</style>", unsafe_allow_html=True)
 
@@ -154,6 +151,12 @@ def main():
                 html_content = file.read()
                 st.markdown(html_content, unsafe_allow_html=True)
 
+        browser_session_id = st.session_state["init"].get("feedback_ai_session", None)[
+            -8:
+        ]
+        session_id = get_session_id()[-32:]
+
+        logger.info(f"user_id:{browser_session_id} session_id:{session_id}...")
         # Main content area
         st.header("Explore user feedback")
         st.write(
@@ -329,6 +332,10 @@ def main():
                         It should reflect the urgency of the problem from \
                         the point of view of the publishing organisation._"
         )
+
+        with st.sidebar.container():
+            authenticator.logout(button_name="Log out", key="logout_button")
+
         # convert to int if not None, else keep as None
         urgency_input = [int(urgency) if urgency else None for urgency in urgency_input]
 
