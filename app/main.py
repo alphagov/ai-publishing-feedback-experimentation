@@ -49,9 +49,13 @@ def set_logger():
     logger = logging.getLogger(__name__)
     logger.setLevel(logging.INFO)
 
+    logs_dir = "app/logs"
+    if not os.path.exists(logs_dir):
+        os.makedirs(logs_dir)
+
     # Rotate the file every day (midnight), and keep 7 days of backup logs
     file_handler = TimedRotatingFileHandler(
-        f"app/logs/app_{datetime.datetime.now()}.log",
+        f"{logs_dir}/app_{datetime.datetime.now()}.log",
         when="midnight",
         interval=1,
         backupCount=7,
@@ -337,6 +341,9 @@ def main():
 
         if clear_filters:
             # Reload webpage to clear all filters
+            logger.info(
+                f"user_id:{browser_session_id} | session_id:{session_id} | clearing filters..."
+            )
             streamlit_js_eval(js_expressions="parent.window.location.reload()")
 
         st.sidebar.divider()
