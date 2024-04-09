@@ -1,6 +1,7 @@
 import datetime
 import json
 import logging
+from logging.handlers import TimedRotatingFileHandler
 import os
 import subprocess
 
@@ -41,9 +42,28 @@ st.set_page_config(
     },
 )
 
-# Configure logger
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger(__name__)
+
+@st.cache_resource()
+def set_logger():
+    # Configure logger
+    logger = logging.getLogger(__name__)
+    logger.setLevel(logging.INFO)
+
+    # Rotate the file every day (midnight), and keep 7 days of backup logs
+    file_handler = TimedRotatingFileHandler(
+        f"app/logs/app_{datetime.datetime.now()}.log",
+        when="midnight",
+        interval=1,
+        backupCount=7,
+        encoding="utf-8",
+    )
+    formatter = logging.Formatter(
+        "%(asctime)s | %(name)s | %(levelname)s | %(message)s"
+    )
+    file_handler.setFormatter(formatter)
+    logger.addHandler(file_handler)
+    return logger
+
 
 # Configure auth
 with open(".config/auth_config.yaml") as file:
@@ -114,6 +134,7 @@ def get_session_id():
     return session_id
 
 
+logger = set_logger()
 client = load_qdrant_client()
 model = load_model(HF_MODEL_NAME)
 
@@ -150,12 +171,12 @@ def main():
                 html_content = file.read()
                 st.markdown(html_content, unsafe_allow_html=True)
 
+        # Set session IDs
         browser_session_id = st.session_state["init"].get("feedback_ai_session", None)[
             -8:
         ]
         session_id = get_session_id()[-32:]
 
-        logger.info(f"user_id:{browser_session_id} session_id:{session_id}...")
         # Main content area
         st.header("Explore user feedback")
         st.write(
@@ -350,6 +371,9 @@ def main():
 
         if search_button:
             if len(search_term_input) > 0:
+                logger.info(
+                    f"user_id:{browser_session_id} | session_id:{session_id} | running semantic search for '{search_terms}' with filters {filter_dict}..."
+                )
                 query_embedding = model.encode(search_terms)
                 # Call the search function with filters
                 print(f"Running semantic search on {COLLECTION_NAME}...")
@@ -361,7 +385,9 @@ def main():
                     filter_dict=filter_dict,
                 )
                 results = [dict(result) for result in search_results]
-                print(f"Num results: {len(results)}")
+                logger.info(
+                    f"user_id:{browser_session_id} | session_id:{session_id} | running semantic search for '{search_terms}' returned {len(results)} results"
+                )
             elif (
                 len(search_term_input) == 0
                 and any(
@@ -370,6 +396,9 @@ def main():
                 > 0
             ):
                 st.write("Running filter search...")
+                logger.info(
+                    f"user_id | {browser_session_id} | session_id:{session_id} | running filter search with filters {filter_dict}..."
+                )
                 # Call the filter function
                 search_results = filter_search(
                     client=client,
@@ -378,7 +407,13 @@ def main():
                 )
                 data, _ = search_results
                 results = [dict(result) for result in data]
+                logger.info(
+                    f"user_id | {browser_session_id} | session_id:{session_id} | running filter search with filters {filter_dict} returned {len(results)} results"
+                )
             else:
+                logger.info(
+                    f"user_id | {browser_session_id} | session_id:{session_id} | attempted to run search without providing a search term or URL"
+                )
                 st.write(
                     "Please supply a search term or URL(s) and hit 'Explore Feedback' to see results..."
                 )
@@ -441,11 +476,17 @@ def main():
                     if len(available_feedback_for_context) <= max_context_records
                     else max_context_records
                 )
+                feedback_for_context = available_feedback_for_context[
+                    :num_feedback_for_context
+                ]
                 summary = create_openai_summary(
                     system_prompt,
                     user_prompt,
-                    available_feedback_for_context[:num_feedback_for_context],
+                    feedback_for_context,
                     OPENAI_API_KEY,
+                )
+                logger.info(
+                    f"user_id | {browser_session_id} | session_id:{session_id} | OpenAI summary generated on {len(feedback_for_context)}"
                 )
                 st.subheader(
                     f"Top themes based on {num_feedback_for_context} records of user feedback"
