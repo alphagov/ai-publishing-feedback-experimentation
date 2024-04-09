@@ -28,7 +28,7 @@ COLLECTION_NAME = os.getenv("COLLECTION_NAME")
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 FILTER_OPTIONS_PATH = os.getenv("FILTER_OPTIONS_PATH")
 HF_MODEL_NAME = os.getenv("HF_MODEL_NAME")
-QDRANT_HOST = os.getenv("QDRANT_HOST_EXTERNAL")  # "localhost" if running locally
+QDRANT_HOST = os.getenv("QDRANT_HOST")  # "localhost" if running locally
 QDRANT_PORT = os.getenv("QDRANT_PORT")
 STREAMLIT_PASSWORD = os.getenv("STREAMLIT_PASSWORD")
 
