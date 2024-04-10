@@ -8,34 +8,48 @@ TODO
 
 ## Technical documentation
 
-You have two options for running the application - run it over the remote vector store (Qdrant collection) or populate a local collection and run over that. You can run locally either with docker from the command line, or using docker-compose to run everything with one command.
+You have two options for running the application locally:
 
-### Running over remote collection (using Google Cloud Engine)
-Ensure you have the correct environment variables set (speak with the GOV.UK AI team), paying particular attention to the QDRANT_HOST variable, and ensuring the VM in GCE is running and populated. If so, you can run the application locally with
-`streamlit run app/main.py`
+1. run it over the remote vector store (Qdrant collection), or
+2. populate a local collection and run over that.
 
-If the collection on the VM has not been created/populated, you can simply run
-`python collection/create_collection.py`
-to populate it.
+You can run locally either with docker from the command line, or using docker-compose to run everything with one command. You can also deploy the application to Cloud Run using Cloud Build which allows you to run the application in the cloud.
 
-### Running over local collection
-Before starting, make sure you have docker and docker-compose installed.
+### Running the application locally using Docker compose
 
-#### With docker-compose (recommended)
-To run the application with one docker-compose command, make sure you have the relevant environment variables stored (speak with the AI team). Then run `docker-compose up`.
+Note: This will run the Streamlit app, the Qdrant database, and the evaluation script on your local machine.
 
-#### With Docker
-To run locally using Docker, you can run
-` docker run -p 6333:6333 -p 6334:6334 -v $(pwd)/qdrant_storage:/qdrant/storage:z qdrant/qdrant`
-and then run
-`python collection/create_collection.py`
-to populate the local collection, ensuring `QDRANT_HOST` is set to "localhost" in your environment variables. This may take a while to run
+To run the application, make sure you have docker and docker-compose installed and have the relevant environment variables stored (speak with the AI team). Then run `docker-compose up`.
 
-You can then run
-`streamlit run app/main.py`
-to run the application locally.
+You will also need to download data to fill the dashboard dropdowns. The script `app/get_metadata_for_filters.py` does this and is run in `app/main.py`.
 
-## A note on Poetry
+### Running the application locally using Docker
+
+To run locally using Docker, you can run `docker run -p 6333:6333 -p 6334:6334 -v $(pwd)/qdrant_storage:/qdrant/storage:z qdrant/qdrant` and then run `python collection/create_collection.py` to populate the local collection, ensuring QDRANT_HOST is set to "localhost" in your environment variables. This may take a while to run
+
+You can then run `streamlit run app/main.py` to run the application locally.
+
+### Running the application locally using a remote Qdrant database in Compute Engine
+
+Note: This will run ONLY the Streamlit app on your local machine.
+
+To run the application locally using a remote Qdrant database in Compute engine you can simply run `streamlit run app/main.py` from the root directory. This will start the application on your local machine and connect to the remote Qdrant database IF you have the correct environment variables set. The environment variables are stored in the `compute_engine.env` file in the root directory.
+
+_Troubleshooting: Pay particular attention to the QDRANT_HOST environment variable, and ensure that the VM instance is running in Google Compute Engine. If the collection on the VM has not been created/populated yet, run `python collection/create_collection.py` to populate it._
+
+### Deploy the application to Cloud Run with Cloud Build
+
+Note: This will deploy the Streamlit app to Cloud Run using Cloud Build.
+
+Check that the root directory contains a `cloudbuild.yaml` and a `Dockerfile`. These files define the build process and app requirements.
+
+1. **Build the Image**: From the root directory, run `gcloud builds submit --config cloudbuild.yaml`. This command builds the app's container image using Cloud Build, based on instructions in `cloudbuild.yaml`, and pushes it to Google Artifact Registry.
+
+2. **Deploy to Cloud Run**: Instead of manually setting environment variables in the cloud console, run the `deploy_to_cloudrun.sh` script locally using `bash deploy_to_cloudrun.sh`. This script automates the deployment to Cloud Run, including setting environment variables.
+
+_Troubleshooting: if the service is deployed but the application fails saying that it cannot find a folder/file, then you can use `gcloud builds submit --config cloudbuild_ls.yaml`. This takes the image pushed to Artifact Registry, opens it, and runs a command to recursively list the files in the container. This can help you debug what files are missing. This will not download the image to your local machine which saves space (~8GB) but will still take a while to run._
+
+### A note on Poetry
 
 To install dependencies into a new environment, run `poetry install`. This will create an environment if one does not already exist, following the naming convention "project-name-py3.XX".
 

@@ -12,10 +12,13 @@ from src.sql_queries import query_labelled_feedback, query_all_feedback
 from src.utils.bigquery import query_bigquery
 from src.utils.utils import load_qdrant_client, load_config
 
+
 load_dotenv()
+
 PUBLISHING_PROJECT_ID = os.getenv("PUBLISHING_PROJECT_ID")
 LABELLED_FEEDBACK_TABLE = os.getenv("EVALUATION_TABLE")
 PUBLISHING_VIEW = os.getenv("PUBLISHING_VIEW")
+PUBLISHING_VIEW = f"`{PUBLISHING_VIEW}`"
 COLLECTION_NAME = os.getenv("COLLECTION_NAME")
 EVAL_COLLECTION_NAME = os.getenv("EVAL_COLLECTION_NAME")
 QDRANT_HOST = os.getenv("QDRANT_HOST")

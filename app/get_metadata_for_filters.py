@@ -10,9 +10,12 @@ from src.sql_queries import (
 )
 from src.utils.bigquery import query_bigquery
 
+
 load_dotenv()
+
 PUBLISHING_PROJECT_ID = os.getenv("PUBLISHING_PROJECT_ID")
 PUBLISHING_VIEW = os.getenv("PUBLISHING_VIEW")
+PUBLISHING_VIEW = f"`{PUBLISHING_VIEW}`"
 FILTER_OPTIONS_PATH = os.getenv("FILTER_OPTIONS_PATH")
 
 queries = {
