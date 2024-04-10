@@ -1,0 +1,11 @@
+credentials:
+  usernames:
+    paint-opposite-subway:
+      failed_login_attempts: 0 # Will be managed automatically
+      logged_in: False # Will be managed automatically
+      name: Feedback AI Tester
+      password: ${STREAMLIT_PASSWORD}  # Will be hashed automatically
+cookie:
+  expiry_days: 5
+  key: ${STREAMLIT_COOKIE_KEY} # Must be string
+  name: feedback_ai_session
