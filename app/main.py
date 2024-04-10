@@ -32,6 +32,7 @@ HF_MODEL_NAME = os.getenv("HF_MODEL_NAME")
 QDRANT_HOST = os.getenv("QDRANT_HOST")  # "localhost" if running locally
 QDRANT_PORT = os.getenv("QDRANT_PORT")
 STREAMLIT_PASSWORD = os.getenv("STREAMLIT_PASSWORD")
+STREAMLIT_COOKIE_KEY = os.getenv("STREAMLIT_COOKIE_KEY")
 
 st.set_page_config(
     layout="wide",
