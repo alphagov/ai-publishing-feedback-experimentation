@@ -5,8 +5,7 @@ from qdrant_client import QdrantClient
 
 
 load_dotenv()
-
-QDRANT_HOST = os.getenv("QDRANT_HOST")
+QDRANT_HOST = os.getenv("QDRANT_HOST_EXTERNAL")
 QDRANT_PORT = os.getenv("QDRANT_PORT")
 COLLECTION_NAME = os.getenv("COLLECTION_NAME")
 EVAL_COLLECTION_NAME = os.getenv("EVAL_COLLECTION_NAME")

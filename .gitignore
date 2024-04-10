@@ -28,5 +28,10 @@ app/app/data/distinct_dimensions.json
 prompts/
 prompts/*
 
+# Logs
+*.log
+
 # Models
 models/*
+
+deploy_to_cloudrun.sh

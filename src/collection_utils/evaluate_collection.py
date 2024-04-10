@@ -3,7 +3,7 @@ from typing import List
 import regex as re
 from qdrant_client import QdrantClient
 
-from src.collection.query_collection import (
+from src.collection_utils.query_collection import (
     filter_search,
     get_semantically_similar_results,
 )

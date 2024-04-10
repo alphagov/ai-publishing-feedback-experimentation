@@ -1,6 +1,6 @@
 import os
 
-from src.collection.evaluate_collection import (
+from src.collection_utils.evaluate_collection import (
     assess_retrieval_accuracy,
     assess_scroll_retrieval,
     get_all_regex_counts,
