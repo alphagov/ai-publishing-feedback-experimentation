@@ -13,6 +13,7 @@ from qdrant_client import QdrantClient
 from sentence_transformers import SentenceTransformer
 from streamlit_js_eval import streamlit_js_eval
 from yaml.loader import SafeLoader
+import google.cloud.logging
 
 from prompts.openai_summarise import system_prompt, user_prompt
 from src.collection_utils.query_collection import (
@@ -49,6 +50,8 @@ st.set_page_config(
 @st.cache_resource()
 def set_logger():
     # Configure logger
+    client = google.cloud.logging.Client()
+    client.setup_logging()
     logger = logging.getLogger(__name__)
     logger.setLevel(logging.INFO)
 
@@ -165,7 +168,6 @@ def main():
     # Check if user is authenticated, serve logout widget if so.
     if st.session_state.get("authentication_status", False):
         logger.info("User authenticated successfully")
-        st.write(f'Welcome *{st.session_state["name"]}!*')
 
         # Apply custom css elements in sidebar
         with open("app/style/custom.css", "r") as file:
