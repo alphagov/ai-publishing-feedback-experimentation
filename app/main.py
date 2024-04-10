@@ -345,6 +345,12 @@ def main():
                 result_ordered[renaming_dict["created"]], "%Y-%m-%d"
             ).date()
 
+            # Reformat urgency to human readable
+            inverted_urgency_translate = {v: k for k, v in urgency_translate.items()}
+            numeric_urgency = str(result_ordered["Urgency"])
+            if numeric_urgency in inverted_urgency_translate:
+                result_ordered["Urgency"] = inverted_urgency_translate[numeric_urgency]
+
             # Filter on date
             if (
                 result_ordered["Similarity score"] > similarity_threshold
