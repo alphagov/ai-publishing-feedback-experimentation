@@ -21,7 +21,7 @@ from src.collection_utils.query_collection import (
 )
 from src.common import renaming_dict, urgency_translate
 from src.utils.call_openai_summarise import create_openai_summary
-from src.utils.utils import process_csv_file, process_txt_file
+from src.utils.utils import process_csv_file, process_txt_file, replace_env_variables
 
 # get env vars
 load_dotenv()
@@ -72,6 +72,7 @@ def set_logger():
 # Configure auth
 with open(".config/auth_config.yaml") as file:
     auth_config = yaml.load(file, Loader=SafeLoader)
+    auth_config = replace_env_variables(auth_config)
 
 authenticator = stauth.Authenticate(
     auth_config["credentials"],
@@ -159,7 +160,7 @@ def main():
     authenticator.login(max_login_attempts=5)
 
     # Check if user is authenticated, serve logout widget if so.
-    if st.session_state["authentication_status"]:
+    if st.session_state.get("authentication_status", False):
         logger.info("User authenticated successfully")
         st.write(f'Welcome *{st.session_state["name"]}!*')
 
@@ -176,9 +177,9 @@ def main():
                 st.markdown(html_content, unsafe_allow_html=True)
 
         # Set session IDs
-        browser_session_id = st.session_state["init"].get("feedback_ai_session", None)[
-            -8:
-        ]
+        browser_session_id = st.session_state["init"].get(
+            "feedback_ai_session", "_unknown_"
+        )[-9:]
         session_id = get_session_id()[-32:]
 
         # Main content area

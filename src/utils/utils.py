@@ -1,3 +1,4 @@
+import os
 import csv
 import json
 
@@ -120,3 +121,26 @@ def process_csv_file(file_obj):
         raise ValueError("Failed to decode the CSV file with the tried encodings.")
 
     return url_list
+
+
+def replace_env_variables(data):
+    """
+    Recursively replace placeholders in the given data structure with environment variable values.
+
+    Args:
+        data (dict | list | str): The data structure (usually a dict or list) loaded from YAML.
+
+    Returns:
+        The data structure with placeholders replaced by environment variable values.
+    """
+    if isinstance(data, dict):
+        return {key: replace_env_variables(value) for key, value in data.items()}
+    elif isinstance(data, list):
+        return [replace_env_variables(element) for element in data]
+    elif isinstance(data, str):
+        if data.startswith("${") and data.endswith("}"):
+            env_var = data.strip("${}")
+            return os.getenv(env_var, f"Missing environment variable: {env_var}")
+        return data
+    else:
+        return data
