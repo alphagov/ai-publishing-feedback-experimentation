@@ -2,6 +2,7 @@ from typing import List
 from collections import defaultdict
 import regex as re
 from qdrant_client import QdrantClient
+import numpy as np
 
 from src.collection.query_collection import (
     filter_search,
@@ -360,3 +361,149 @@ def get_threshold_values(data, input_threshold=0.0):
             if threshold == input_threshold:
                 threshold_list.append(value)
     return threshold_list
+
+
+def create_precision_boxplot_data(precision_values: list[dict]):
+    """
+    Create data for precision boxplot
+
+    Args:
+        precision_values (list): List of precision values
+
+    Returns:
+        dict: Dictionary of precision values"""
+    # Drop the label from the dict
+    precision_values = [list(item.values())[0] for item in precision_values]
+
+    # Initialise empty dic
+    precision_plotting_values = {}
+
+    # Loop over threshold values and store the precision values in dict
+    for i in np.arange(0, 1.1, 0.1):
+        threshold_list = get_threshold_values(
+            precision_values,
+            input_threshold=i,
+        )
+        precision_plotting_values[i] = threshold_list
+
+    # Round the keys to 2 decimal places
+    rounded_precision_values = {
+        round(key, 2): value for key, value in precision_plotting_values.items()
+    }
+    return rounded_precision_values
+
+
+def create_recall_boxplot_data(recall_values: list[dict]):
+    """
+    Create data for recall boxplot
+
+    Args:
+        recall_values (list): List of recall values
+
+    Returns:
+        dict: Dictionary of recall values"""
+    # Drop the label from the dict
+    recall_values = [list(item.values())[0] for item in recall_values]
+
+    # Initialise empty dict
+    recall_plotting_values = {}
+
+    # Loop over threshold values and store the recall values in dict
+    for i in np.arange(0, 1.1, 0.1):
+        threshold_list = get_threshold_values(
+            recall_values,
+            input_threshold=i,
+        )
+        recall_plotting_values[i] = threshold_list
+
+    # Round the keys to 2 decimal places
+    rounded_precision_values = {
+        round(key, 2): value for key, value in recall_plotting_values.items()
+    }
+    return rounded_precision_values
+
+
+def create_precision_line_data(precision_values: list[dict]):
+    """
+    Create data for precision line plot
+
+    Args:
+        precision_values (list): List of precision values
+
+    Returns:
+        dict: Dictionary of precision values"""
+    # Calculate mean values for each threshold
+    mean_precision_values = calculate_mean_values(precision_values)
+    # Round the keys and values to 2 decimal places
+    mean_precision_values = {
+        round(k, 2): round(v, 2) for k, v in mean_precision_values.items()
+    }
+    return mean_precision_values
+
+
+def create_recall_line_data(recall_values: list[dict]):
+    """
+    Create data for recall line plot
+
+    Args:
+        recall_values (list): List of recall values
+
+    Returns:
+        dict: Dictionary of recall values"""
+    # Calculate mean values for each threshold
+    mean_recall_values = calculate_mean_values(recall_values)
+    # Round the keys and values to 2 decimal places
+    mean_recall_values = {
+        round(k, 2): round(v, 2) for k, v in mean_recall_values.items()
+    }
+    return mean_recall_values
+
+
+def calculate_metrics(
+    unique_label: str,
+    regex_ids: dict,
+    model: object,
+    client: object,
+    similarity_threshold: float,
+    collection_name: str,
+):
+    """
+    Calculate precision and recall for a given label
+
+    Args:
+        unique_label (str): The unique label
+        regex_ids (dict): The dictionary of regex IDs
+        model (Any): The model object
+        client (Any): The client object
+        similarity_threshold (float): The similarity threshold
+        collection_name (str): The name of the collection
+
+    Returns:
+        float: Precision
+        float: Recall
+    """
+    # Get the count of records from the regex counts
+    relevant_records = regex_ids[unique_label]
+
+    # Embed the label
+    query_embedding = model.encode(unique_label)
+
+    # Retrieve the top K results for the label
+    try:
+        results = get_semantically_similar_results(
+            client=client,
+            collection_name=collection_name,
+            query_embedding=query_embedding,
+            score_threshold=similarity_threshold,
+        )
+    except Exception as e:
+        print(f"get_semantically_similar_results error: {e}")
+        pass
+
+    result_ids = [str(result.id) for result in results]
+
+    # Calculate precision and recall
+    precision = calculate_precision(result_ids, relevant_records)
+    recall = calculate_recall(result_ids, relevant_records)
+
+    return precision, recall

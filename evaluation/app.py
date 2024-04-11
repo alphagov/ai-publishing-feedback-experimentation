@@ -4,10 +4,11 @@ import pickle
 import streamlit as st
 import plotly.graph_objs as go
 from src.collection.evaluate_collection import (
-    calculate_mean_values,
-    get_threshold_values,
+    create_precision_boxplot_data,
+    create_recall_boxplot_data,
+    create_precision_line_data,
+    create_recall_line_data,
 )
-import numpy as np
 
 load_dotenv()
 
@@ -28,70 +29,6 @@ with open("data/precision_values.pkl", "rb") as f:
 
 with open("data/recall_values.pkl", "rb") as f:
     recall_values = pickle.load(f)
-
-
-def create_precision_boxplot_data(precision_values):
-    # Drop the label from the dict
-    precision_values = [list(item.values())[0] for item in precision_values]
-
-    # Initialise empty dic
-    precision_plotting_values = {}
-
-    # Loop over threshold values and store the precision values in dict
-    for i in np.arange(0, 1.1, 0.1):
-        threshold_list = get_threshold_values(
-            precision_values,
-            input_threshold=i,
-        )
-        precision_plotting_values[i] = threshold_list
-
-    # Round the keys to 2 decimal places
-    rounded_precision_values = {
-        round(key, 2): value for key, value in precision_plotting_values.items()
-    }
-    return rounded_precision_values
-
-
-def create_recall_boxplot_data(recall_values):
-    # Drop the label from the dict
-    recall_values = [list(item.values())[0] for item in recall_values]
-
-    # Initialise empty dict
-    recall_plotting_values = {}
-
-    # Loop over threshold values and store the recall values in dict
-    for i in np.arange(0, 1.1, 0.1):
-        threshold_list = get_threshold_values(
-            recall_values,
-            input_threshold=i,
-        )
-        recall_plotting_values[i] = threshold_list
-
-    # Round the keys to 2 decimal places
-    rounded_precision_values = {
-        round(key, 2): value for key, value in recall_plotting_values.items()
-    }
-    return rounded_precision_values
-
-
-def create_precision_line_data(precision_values):
-    # Calculate mean values for each threshold
-    mean_precision_values = calculate_mean_values(precision_values)
-    # Round the keys and values to 2 decimal places
-    mean_precision_values = {
-        round(k, 2): round(v, 2) for k, v in mean_precision_values.items()
-    }
-    return mean_precision_values
-
-
-def create_recall_line_data(recall_values):
-    # Calculate mean values for each threshold
-    mean_recall_values = calculate_mean_values(recall_values)
-    # Round the keys and values to 2 decimal places
-    mean_recall_values = {
-        round(k, 2): round(v, 2) for k, v in mean_recall_values.items()
-    }
-    return mean_recall_values
 
 
 precision_boxplot_data = create_precision_boxplot_data(precision_values)

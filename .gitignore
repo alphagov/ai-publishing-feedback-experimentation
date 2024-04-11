@@ -30,3 +30,6 @@ prompts/*
 
 # Models
 models/*
+
+# Logs
+*.log
