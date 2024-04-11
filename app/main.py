@@ -415,10 +415,7 @@ def main():
                     st.stop()
             elif (
                 len(search_term_input) == 0
-                and any(
-                    len(filter_dict[key]) > 0 for key in ["url", "primary_department"]
-                )
-                > 0
+                and any(len(filter_dict[key]) > 0 for key in ["url"]) > 0
             ):
                 st.write("Running search...")
                 logger.info(
@@ -510,7 +507,7 @@ def main():
                 ]
 
                 openai_user_query_id = uuid.uuid4()
-                summary = create_openai_summary(
+                summary, status = create_openai_summary(
                     system_prompt,
                     user_prompt,
                     feedback_for_context,
@@ -519,10 +516,13 @@ def main():
                     seed=seed,
                 )
                 logger.info(
-                    f"user_id | {browser_session_id} | session_id:{session_id} | OpenAI user_query_id {str(openai_user_query_id)} | OpenAI summary generated on {len(feedback_for_context)} feedback records with model {openai_model_name}, {str(summary['prompt_tokens'])} prompt tokens and {str(summary['completion_tokens'])} completion tokens"
+                    f"user_id | {browser_session_id} | session_id:{session_id} | OpenAI user_query_id {str(openai_user_query_id)} | OpenAI call status: {status}"
+                )
+                st.write(
+                    f"Summarisation over {len(feedback_for_context)} records: {status}"
                 )
                 logger.info(
-                    f"user_id | {browser_session_id} | session_id:{session_id} | OpenAI user_query_id {str(openai_user_query_id)} | OpenAI summary: {summary['open_summary']}"
+                    f"user_id | {browser_session_id} | session_id:{session_id} | OpenAI user_query_id {str(openai_user_query_id)} | OpenAI summary generated on {len(feedback_for_context)} feedback records with model {openai_model_name}, {str(summary['prompt_tokens'])} prompt tokens and {str(summary['completion_tokens'])} completion tokens"
                 )
                 st.subheader(
                     f"Top themes based on {num_feedback_for_context} records of user feedback"
@@ -532,6 +532,9 @@ def main():
                 )
                 try:
                     st.write(summary["open_summary"])
+                    logger.info(
+                        f"user_id | {browser_session_id} | session_id:{session_id} | OpenAI user_query_id {str(openai_user_query_id)} | OpenAI summary: {summary['open_summary']}"
+                    )
                 except Exception as e:
                     st.error(f"Error generating summary: {e}")
                 st.text("")

@@ -32,6 +32,7 @@ def create_openai_summary(
             "open_summary": open_summary,
             "prompt_tokens": prompt_tokens,
             "completion_tokens": completion_tokens,
-        }  # type: ignore
+        }, "success"  # type: ignore
     except Exception as e:
         print(f"OpenAI request failed: {e}")
+        return {}, "error"
