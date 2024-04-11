@@ -35,4 +35,4 @@ def create_openai_summary(
         }, "success"  # type: ignore
     except Exception as e:
         print(f"OpenAI request failed: {e}")
-        return {}, "error"
+        return {}, f"error: {e}"
