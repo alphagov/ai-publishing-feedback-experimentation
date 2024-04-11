@@ -31,12 +31,8 @@ with open("data/recall_values.pkl", "rb") as f:
 
 
 def create_precision_boxplot_data(precision_values):
-    # Format the threshold keys to 2 decimal places
+    # Drop the label from the dict
     precision_values = [list(item.values())[0] for item in precision_values]
-    rounded_precision_values = [
-        {round(key, 2): value for key, value in item.items()}
-        for item in precision_values
-    ]
 
     # Initialise empty dic
     precision_plotting_values = {}
@@ -44,19 +40,21 @@ def create_precision_boxplot_data(precision_values):
     # Loop over threshold values and store the precision values in dict
     for i in np.arange(0, 1.1, 0.1):
         threshold_list = get_threshold_values(
-            rounded_precision_values,
+            precision_values,
             input_threshold=i,
         )
         precision_plotting_values[i] = threshold_list
-    return precision_plotting_values
+
+    # Round the keys to 2 decimal places
+    rounded_precision_values = {
+        round(key, 2): value for key, value in precision_plotting_values.items()
+    }
+    return rounded_precision_values
 
 
 def create_recall_boxplot_data(recall_values):
-    # Format the threshold keys to 2 decimal places
+    # Drop the label from the dict
     recall_values = [list(item.values())[0] for item in recall_values]
-    rounded_recall_values = [
-        {round(key, 2): value for key, value in item.items()} for item in recall_values
-    ]
 
     # Initialise empty dict
     recall_plotting_values = {}
@@ -64,11 +62,16 @@ def create_recall_boxplot_data(recall_values):
     # Loop over threshold values and store the recall values in dict
     for i in np.arange(0, 1.1, 0.1):
         threshold_list = get_threshold_values(
-            rounded_recall_values,
+            recall_values,
             input_threshold=i,
         )
         recall_plotting_values[i] = threshold_list
-    return recall_plotting_values
+
+    # Round the keys to 2 decimal places
+    rounded_precision_values = {
+        round(key, 2): value for key, value in recall_plotting_values.items()
+    }
+    return rounded_precision_values
 
 
 def create_precision_line_data(precision_values):
@@ -124,48 +127,48 @@ def main():
     with col3:
         st.metric("F2 score placeholder", 0)
 
-    # # Plot
-    # fig = go.Figure()
+    # Plot
+    fig = go.Figure()
 
-    # # Add line plot for thresholds vs. precision scores
-    # fig.add_trace(
-    #     go.Scatter(x=thresholds, y=precision_scores, mode="lines", name="Precision")
-    # )
-    # fig.add_trace(
-    #     go.Scatter(x=thresholds, y=recall_scores, mode="lines", name="Recall")
-    # )
+    # Add line plot for thresholds vs. precision scores
+    fig.add_trace(
+        go.Scatter(x=thresholds, y=precision_scores, mode="lines", name="Precision")
+    )
+    fig.add_trace(
+        go.Scatter(x=thresholds, y=recall_scores, mode="lines", name="Recall")
+    )
 
-    # # Add a point to highlight the selected threshold and precision score
-    # fig.add_trace(
-    #     go.Scatter(
-    #         x=[selected_threshold],
-    #         y=[selected_precision],
-    #         mode="markers",
-    #         marker=dict(color="red", size=10),
-    #         name="Selected",
-    #     )
-    # )
+    # Add a point to highlight the selected threshold and precision score
+    fig.add_trace(
+        go.Scatter(
+            x=[selected_threshold],
+            y=[selected_precision],
+            mode="markers",
+            marker=dict(color="red", size=10),
+            name="Selected",
+        )
+    )
 
-    # # Add a point to highlight the selected threshold and recall score
-    # fig.add_trace(
-    #     go.Scatter(
-    #         x=[selected_threshold],
-    #         y=[selected_recall],
-    #         mode="markers",
-    #         marker=dict(color="blue", size=10),
-    #         name="Selected",
-    #     )
-    # )
+    # Add a point to highlight the selected threshold and recall score
+    fig.add_trace(
+        go.Scatter(
+            x=[selected_threshold],
+            y=[selected_recall],
+            mode="markers",
+            marker=dict(color="blue", size=10),
+            name="Selected",
+        )
+    )
 
-    # # Update layout to add titles and make it clearer
-    # fig.update_layout(
-    #     title="Threshold vs. Precision/Recall Score",
-    #     xaxis_title="Threshold",
-    #     yaxis_title="Precision/Recall Score",
-    # )
+    # Update layout to add titles and make it clearer
+    fig.update_layout(
+        title="Threshold vs. Precision/Recall Score",
+        xaxis_title="Threshold",
+        yaxis_title="Precision/Recall Score",
+    )
 
-    # # Show the plot
-    # st.plotly_chart(fig)
+    # Show the plot
+    st.plotly_chart(fig)
 
     # Box plot
     fig2 = go.Figure()
@@ -191,29 +194,50 @@ def main():
     # Update layout to add titles and make it clearer
     fig2.update_layout(
         title="Threshold vs. Precision Score",
-        xaxis_title="Threshold",
+        # xaxis_title="Threshold",
         yaxis_title="Precision Score",
     )
+
+    # Hide the legend
+    fig2.update_layout(showlegend=False)
 
     # Show the plot
     st.plotly_chart(fig2)
 
-    # # Box plot
-    # fig3 = go.Figure()
+    # Box plot
+    fig3 = go.Figure()
 
-    # # Add box plot for recall scores
-    # for item in recall_boxplot_data.items():
-    #     fig3.add_trace(go.Box(y=item[1], name=f"Threshold: {item[0]}"))
+    # Add box plot for recall scores
+    for item in recall_boxplot_data.items():
+        if item[0] == selected_threshold:
+            fig3.add_trace(
+                go.Box(
+                    y=item[1],
+                    name=f"Threshold: {item[0]}",
+                    marker=dict(color="#00cc96", opacity=1),
+                )
+            )
+        else:
+            fig3.add_trace(
+                go.Box(
+                    y=item[1],
+                    name=f"Threshold: {item[0]}",
+                    marker=dict(color="#19d3f3", opacity=0.5),
+                )
+            )
 
-    # # Update layout to add titles and make it clearer
-    # fig3.update_layout(
-    #     title="Threshold vs. Recall Score",
-    #     xaxis_title="Threshold",
-    #     yaxis_title="Recall Score",
-    # )
+    # Update layout to add titles and make it clearer
+    fig3.update_layout(
+        title="Threshold vs. Recall Score",
+        # xaxis_title="Threshold",
+        yaxis_title="Recall Score",
+    )
 
-    # # Show the plot
-    # st.plotly_chart(fig3)
+    # Hide the legend
+    fig3.update_layout(showlegend=False)
+
+    # Show the plot
+    st.plotly_chart(fig3)
 
 
 if __name__ == "__main__":
