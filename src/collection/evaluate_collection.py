@@ -1,5 +1,5 @@
 from typing import List
-
+from collections import defaultdict
 import regex as re
 from qdrant_client import QdrantClient
 
@@ -334,3 +334,29 @@ def assess_scroll_retrieval(
         )
 
         return result_ids
+
+
+def calculate_mean_values(data_list):
+    # Dictionary to hold cumulative sums and counts for each test
+    sums_counts = defaultdict(lambda: {"sum": 0, "count": 0})
+
+    for item in data_list:
+        for _, values in item.items():
+            for threshold, value in values.items():
+                sums_counts[threshold]["sum"] += value
+                sums_counts[threshold]["count"] += 1
+
+    # Calculate mean for each test
+    mean_values = {
+        test: info["sum"] / info["count"] for test, info in sums_counts.items()
+    }
+    return mean_values
+
+
+def get_threshold_values(data, input_threshold=0.0):
+    threshold_list = []
+    for item in data:
+        for threshold, value in item.items():
+            if threshold == input_threshold:
+                threshold_list.append(value)
+    return threshold_list
