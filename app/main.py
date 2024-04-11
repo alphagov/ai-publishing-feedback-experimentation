@@ -561,9 +561,6 @@ def main():
                 logger.info(
                     f"user_id | {browser_session_id} | session_id:{session_id} | OpenAI user_query_id {str(openai_user_query_id)} | OpenAI call status: {status}"
                 )
-                st.write(
-                    f"Summarisation over {len(feedback_for_context)} records: {status}"
-                )
                 logger.info(
                     f"user_id | {browser_session_id} | session_id:{session_id} | OpenAI user_query_id {str(openai_user_query_id)} | OpenAI summary generated on {len(feedback_for_context)} feedback records with model {openai_model_name}, {str(summary['prompt_tokens'])} prompt tokens and {str(summary['completion_tokens'])} completion tokens"
                 )
