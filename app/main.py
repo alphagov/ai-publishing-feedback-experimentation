@@ -304,6 +304,14 @@ def main():
         else:
             matched_page_paths = []
 
+        st.sidebar.subheader("By publishing organisation")
+        org_input = st.sidebar.multiselect(
+            "Select publishing organisation:",
+            filter_options["organisation"],
+            default=[],
+            key="org_input",
+        )
+
         st.sidebar.divider()
         st.sidebar.header("Narrow your search\n")
         st.sidebar.subheader("By urgency")
@@ -317,14 +325,6 @@ def main():
 
         # translate urgency rating to human readable
         urgency_input = [urgency_translate[value] for value in urgency_user_input]
-
-        st.sidebar.subheader("By publishing organisation")
-        org_input = st.sidebar.multiselect(
-            "Select publishing organisation:",
-            filter_options["organisation"],
-            default=[],
-            key="org_input",
-        )
 
         st.sidebar.subheader("By content type")
         doc_type_input = st.sidebar.multiselect(
@@ -425,7 +425,10 @@ def main():
                     st.stop()
             elif (
                 len(search_term_input) == 0
-                and any(len(filter_dict[key]) > 0 for key in ["url"]) > 0
+                and any(
+                    len(filter_dict[key]) > 0 for key in ["url", "primary_department"]
+                )
+                > 0
             ):
                 st.write("Running search...")
                 logger.info(
@@ -451,7 +454,7 @@ def main():
                     f"user_id | {browser_session_id} | session_id:{session_id} | attempted to run search without providing a search term or URL"
                 )
                 st.write(
-                    "Please supply a search term or URL(s) and hit 'Explore Feedback' to see results..."
+                    "Please supply a search term, URL or publishing organisation and hit 'Explore Feedback' to see results..."
                 )
                 st.stop()
 
