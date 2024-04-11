@@ -152,6 +152,7 @@ model = load_model(HF_MODEL_NAME)
 
 config = load_config(".config/config.json")
 openai_model_name = config.get("openai_model_name")
+seed = int(config.get("openai_seed"))
 similarity_threshold = float(config.get("similarity_threshold_1"))
 max_context_records = int(config.get("max_records_for_summarisation"))
 min_records_for_summarisation = int(config.get("min_records_for_summarisation"))
@@ -384,6 +385,9 @@ def main():
             "spam_classification": spam_filter,
         }
 
+        logger.info(
+            f"user_id:{browser_session_id} | session_id:{session_id} | Search run with filter dictionary with values of length: {[(key, len(val)) for key, val in filter_dict.items()]})"
+        )
         if search_button:
             if len(search_term_input) > 0:
                 logger.info(
@@ -392,17 +396,23 @@ def main():
                 query_embedding = model.encode(search_terms)
                 # Call the search function with filters
                 print(f"Running semantic search on {COLLECTION_NAME}...")
-                search_results = get_semantically_similar_results(
-                    client=client,
-                    collection_name=COLLECTION_NAME,
-                    query_embedding=query_embedding,
-                    score_threshold=similarity_threshold,
-                    filter_dict=filter_dict,
-                )
-                results = [dict(result) for result in search_results]
-                logger.info(
-                    f"user_id:{browser_session_id} | session_id:{session_id} | running semantic search for '{search_terms}' returned {len(results)} results"
-                )
+                st.write("Running search...")
+                try:
+                    search_results = get_semantically_similar_results(
+                        client=client,
+                        collection_name=COLLECTION_NAME,
+                        query_embedding=query_embedding,
+                        score_threshold=similarity_threshold,
+                        filter_dict=filter_dict,
+                    )
+
+                    results = [dict(result) for result in search_results]
+                    logger.info(
+                        f"user_id:{browser_session_id} | session_id:{session_id} | running semantic search for '{search_terms}' returned {len(results)} results"
+                    )
+                except Exception as e:
+                    st.error(f"Error running search, try again...: {e}")
+                    st.stop()
             elif (
                 len(search_term_input) == 0
                 and any(
@@ -410,21 +420,25 @@ def main():
                 )
                 > 0
             ):
-                st.write("Running filter search...")
+                st.write("Running search...")
                 logger.info(
                     f"user_id | {browser_session_id} | session_id:{session_id} | running filter search with filters {filter_dict}..."
                 )
                 # Call the filter function
-                search_results = filter_search(
-                    client=client,
-                    collection_name=COLLECTION_NAME,
-                    filter_dict=filter_dict,
-                )
-                data, _ = search_results
-                results = [dict(result) for result in data]
-                logger.info(
-                    f"user_id | {browser_session_id} | session_id:{session_id} | running filter search with filters {filter_dict} returned {len(results)} results"
-                )
+                try:
+                    search_results = filter_search(
+                        client=client,
+                        collection_name=COLLECTION_NAME,
+                        filter_dict=filter_dict,
+                    )
+                    data, _ = search_results
+                    results = [dict(result) for result in data]
+                    logger.info(
+                        f"user_id | {browser_session_id} | session_id:{session_id} | running filter search with filters {filter_dict} returned {len(results)} results"
+                    )
+                except Exception as e:
+                    st.error(f"Error running search, try again...: {e}")
+                    st.stop()
             else:
                 logger.info(
                     f"user_id | {browser_session_id} | session_id:{session_id} | attempted to run search without providing a search term or URL"
@@ -502,9 +516,13 @@ def main():
                     feedback_for_context,
                     OPENAI_API_KEY,
                     model=openai_model_name,
+                    seed=seed,
                 )
                 logger.info(
                     f"user_id | {browser_session_id} | session_id:{session_id} | OpenAI user_query_id {str(openai_user_query_id)} | OpenAI summary generated on {len(feedback_for_context)} feedback records with model {openai_model_name}, {str(summary['prompt_tokens'])} prompt tokens and {str(summary['completion_tokens'])} completion tokens"
+                )
+                logger.info(
+                    f"user_id | {browser_session_id} | session_id:{session_id} | OpenAI user_query_id {str(openai_user_query_id)} | OpenAI summary: {summary['open_summary']}"
                 )
                 st.subheader(
                     f"Top themes based on {num_feedback_for_context} records of user feedback"
@@ -512,7 +530,10 @@ def main():
                 st.write(
                     "Identified and summarised by AI technology. Please verify the outputs with other data sources to ensure accuracy of information."
                 )
-                st.write(summary["open_summary"])
+                try:
+                    st.write(summary["open_summary"])
+                except Exception as e:
+                    st.error(f"Error generating summary: {e}")
                 st.text("")
             elif get_summary and len(filtered_list) <= min_records_for_summarisation:
                 st.write(
