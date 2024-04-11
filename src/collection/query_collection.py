@@ -29,8 +29,6 @@ def get_semantically_similar_results(
         ]
     )
 
-    print(filter)
-
     if len(filter_dict) > 0:
         search_result = client.search(
             collection_name=collection_name,
