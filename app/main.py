@@ -406,16 +406,15 @@ def main():
                 query_embedding = model.encode(search_terms)
                 # Call the search function with filters
                 print(f"Running semantic search on {COLLECTION_NAME}...")
-                st.write("Running search...")
                 try:
-                    search_results = get_semantically_similar_results(
-                        client=client,
-                        collection_name=COLLECTION_NAME,
-                        query_embedding=query_embedding,
-                        score_threshold=similarity_threshold,
-                        filter_dict=filter_dict,
-                    )
-
+                    with st.spinner("Running search..."):
+                        search_results = get_semantically_similar_results(
+                            client=client,
+                            collection_name=COLLECTION_NAME,
+                            query_embedding=query_embedding,
+                            score_threshold=similarity_threshold,
+                            filter_dict=filter_dict,
+                        )
                     results = [dict(result) for result in search_results]
                     logger.info(
                         f"user_id:{browser_session_id} | session_id:{session_id} | running semantic search for '{search_terms}' returned {len(results)} results"
@@ -430,17 +429,17 @@ def main():
                 )
                 > 0
             ):
-                st.write("Running search...")
                 logger.info(
                     f"user_id | {browser_session_id} | session_id:{session_id} | running filter search with filters {filter_dict}..."
                 )
                 # Call the filter function
                 try:
-                    search_results = filter_search(
-                        client=client,
-                        collection_name=COLLECTION_NAME,
-                        filter_dict=filter_dict,
-                    )
+                    with st.spinner("Running search..."):
+                        search_results = filter_search(
+                            client=client,
+                            collection_name=COLLECTION_NAME,
+                            filter_dict=filter_dict,
+                        )
                     data, _ = search_results
                     results = [dict(result) for result in data]
                     logger.info(
@@ -553,14 +552,14 @@ def main():
                     num_tokens_user_prompt = get_num_tokens_from_string(
                         str(user_prompt_context), openai_model_name
                     )
-
-                summary, status = create_openai_summary(
-                    system_prompt=system_prompt,
-                    user_prompt=user_prompt_context,
-                    open_api_key=OPENAI_API_KEY,
-                    model=openai_model_name,
-                    seed=seed,
-                )
+                with st.spinner("Running search..."):
+                    summary, status = create_openai_summary(
+                        system_prompt=system_prompt,
+                        user_prompt=user_prompt_context,
+                        open_api_key=OPENAI_API_KEY,
+                        model=openai_model_name,
+                        seed=seed,
+                    )
                 logger.info(
                     f"user_id | {browser_session_id} | session_id:{session_id} | OpenAI user_query_id {str(openai_user_query_id)} | OpenAI call status: {status}"
                 )
