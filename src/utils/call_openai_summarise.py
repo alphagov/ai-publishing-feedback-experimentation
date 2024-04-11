@@ -1,17 +1,15 @@
 from openai import OpenAI
+import tiktoken
 
 
 def create_openai_summary(
     system_prompt: str,
     user_prompt: str,
-    context: str,
     open_api_key: str,
     model="gpt-3.5-turbo-0125",
     seed=None,
 ) -> dict:
     client = OpenAI(api_key=open_api_key)
-
-    user_prompt = user_prompt.format(context)
 
     try:
         messages = [
@@ -36,3 +34,10 @@ def create_openai_summary(
     except Exception as e:
         print(f"OpenAI request failed: {e}")
         return {}, f"error: {e}"
+
+
+def get_num_tokens_from_string(string: str, model: str) -> int:
+    """Returns the number of tokens in a text string."""
+    encoding = tiktoken.encoding_for_model(model)
+    num_tokens = len(encoding.encode(string))
+    return num_tokens

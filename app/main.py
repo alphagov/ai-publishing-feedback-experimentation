@@ -22,7 +22,10 @@ from src.collection_utils.query_collection import (
     get_semantically_similar_results,
 )
 from src.common import renaming_dict, urgency_translate
-from src.utils.call_openai_summarise import create_openai_summary
+from src.utils.call_openai_summarise import (
+    create_openai_summary,
+    get_num_tokens_from_string,
+)
 from src.utils.utils import process_csv_file, process_txt_file, replace_env_variables
 
 
@@ -152,6 +155,7 @@ model = load_model(HF_MODEL_NAME)
 
 config = load_config(".config/config.json")
 openai_model_name = config.get("openai_model_name")
+token_limit = int(config.get("token_limit"))
 seed = int(config.get("openai_seed"))
 similarity_threshold = float(config.get("similarity_threshold_1"))
 max_context_records = int(config.get("max_records_for_summarisation"))
@@ -369,6 +373,12 @@ def main():
                         the point of view of the publishing organisation._"
         )
 
+        st.sidebar.markdown(
+            "_**Most relevant feedback** is inferred by semantic similarity \
+                        and by recency. If you are only using the URL search function, \
+                        the most recent feedback is prioritised for summarisation._"
+        )
+
         with st.sidebar.container():
             authenticator.logout(button_name="Log out", key="logout_button")
 
@@ -478,23 +488,27 @@ def main():
                         numeric_urgency
                     ]
 
-                # Filter on date
+                # Filter on date and similarity score
                 if (
                     result_ordered["Similarity score"] > similarity_threshold
                     and start_date <= result_ordered["created_date"] <= end_date
                 ):
-                    result_ordered.pop("created_date")
                     filtered_list.append(result_ordered)
 
-                # Reformat similarity score as percentage, to no decimal places
-                result_ordered[
-                    "Similarity score"
-                ] = f"{result_ordered['Similarity score']*100:.0f}%"
+            # Sort descending by similairty score, then date, to get the most similar results first, then the most recent where similarity is the same
+            filtered_sorted_list = sorted(
+                filtered_list,
+                key=lambda d: (d["Similarity score"], d["created_date"]),
+                reverse=True,
+            )
 
             # Topic summary where > n records returned
-            if get_summary and len(filtered_list) > min_records_for_summarisation:
+            if (
+                get_summary
+                and len(filtered_sorted_list) > min_records_for_summarisation
+            ):
                 available_feedback_for_context = [
-                    record[renaming_dict["feedback"]] for record in filtered_list
+                    record[renaming_dict["feedback"]] for record in filtered_sorted_list
                 ]
                 # Limit the number of feedback records to summarise, if number exceeds max_context_records
                 num_feedback_for_context = (
@@ -507,11 +521,40 @@ def main():
                 ]
 
                 openai_user_query_id = uuid.uuid4()
+                user_prompt_context = user_prompt.format(feedback_for_context)
+                num_tokens_system_prompt = get_num_tokens_from_string(
+                    str(system_prompt), openai_model_name
+                )
+                num_tokens_user_prompt = get_num_tokens_from_string(
+                    str(user_prompt_context), openai_model_name
+                )
+                logger.info(
+                    f"user_id | {browser_session_id} | session_id:{session_id} | OpenAI user_query_id {str(openai_user_query_id)} | Number of tokens total {num_tokens_system_prompt+num_tokens_user_prompt}, with system prompt: {num_tokens_system_prompt} and user prompt: {num_tokens_user_prompt}"
+                )
+                # While the total number of tokens exceeds the token limit, reduce the number of feedback records to summarise
+
+                if num_tokens_system_prompt + num_tokens_user_prompt > token_limit:
+                    st.warning(
+                        f"Too many feedback records to summarise ({num_tokens_system_prompt + num_tokens_user_prompt} tokens) - token limit exceeded. Reducing number of feedback records to summarise..."
+                    )
+                while num_tokens_system_prompt + num_tokens_user_prompt > token_limit:
+                    logger.info(
+                        f"user_id | {browser_session_id} | session_id:{session_id} | OpenAI user_query_id {str(openai_user_query_id)} | Token limit {token_limit} exceeded: {num_tokens_system_prompt + num_tokens_user_prompt} tokens. Reducing number of feedback records to summarise..."
+                    )
+                    # Reduce number of feedback records to summarise
+                    num_feedback_for_context = round(num_feedback_for_context * 0.8)
+                    feedback_for_context = available_feedback_for_context[
+                        :num_feedback_for_context
+                    ]
+                    user_prompt_context = user_prompt.format(feedback_for_context)
+                    num_tokens_user_prompt = get_num_tokens_from_string(
+                        str(user_prompt_context), openai_model_name
+                    )
+
                 summary, status = create_openai_summary(
-                    system_prompt,
-                    user_prompt,
-                    feedback_for_context,
-                    OPENAI_API_KEY,
+                    system_prompt=system_prompt,
+                    user_prompt=user_prompt_context,
+                    open_api_key=OPENAI_API_KEY,
                     model=openai_model_name,
                     seed=seed,
                 )
@@ -525,7 +568,7 @@ def main():
                     f"user_id | {browser_session_id} | session_id:{session_id} | OpenAI user_query_id {str(openai_user_query_id)} | OpenAI summary generated on {len(feedback_for_context)} feedback records with model {openai_model_name}, {str(summary['prompt_tokens'])} prompt tokens and {str(summary['completion_tokens'])} completion tokens"
                 )
                 st.subheader(
-                    f"Top themes based on {num_feedback_for_context} records of user feedback"
+                    f"Top themes based on {len(feedback_for_context)} most relevant records of user feedback"
                 )
                 st.write(
                     "Identified and summarised by AI technology. Please verify the outputs with other data sources to ensure accuracy of information."
@@ -538,12 +581,18 @@ def main():
                 except Exception as e:
                     st.error(f"Error generating summary: {e}")
                 st.text("")
-            elif get_summary and len(filtered_list) <= min_records_for_summarisation:
+            elif (
+                get_summary
+                and len(filtered_sorted_list) <= min_records_for_summarisation
+            ):
                 st.write(
                     "There's not enough feedback matching your search criteria to identify top themes.\n\
                     Try searching with fewer criteria or across more URLs to increase the likelihood of results."
                 )
-            elif not get_summary and len(filtered_list) > min_records_for_summarisation:
+            elif (
+                not get_summary
+                and len(filtered_sorted_list) > min_records_for_summarisation
+            ):
                 st.write(
                     "No summary requested. Check box to get an AI-generated summary of relevant feedback."
                 )
@@ -552,10 +601,17 @@ def main():
                     "No summary requested. Insufficient feedback records for summarisation."
                 )
             st.subheader(
-                f"{len(filtered_list)} user feedback comments based on your search criteria"
+                f"{len(filtered_sorted_list)} user feedback comments based on your search criteria"
             )
+
+            # remove created_date from the dictionary, as duplicated with date
+            for d in filtered_sorted_list:
+                d.pop("created_date", None)
+                # Reformat similarity score as percentage, to no decimal places
+                d["Similarity score"] = f"{d['Similarity score']*100:.0f}%"
+            # Write out the data
             st.dataframe(
-                filtered_list,
+                filtered_sorted_list,
                 column_config={
                     "Date": st.column_config.DateColumn(
                         "Date",
