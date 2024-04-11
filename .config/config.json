@@ -1,4 +1,7 @@
 {
+    "openai_model_name": "gpt-3.5-turbo-0125",
+    "token_limit": 16000,
+    "openai_seed": 42,
     "similarity_threshold_1" : 0.5,
     "similarity_threshold_2" : 0.7,
     "max_records_for_summarisation" : 200,

@@ -21,7 +21,7 @@ PUBLISHING_VIEW = os.getenv("PUBLISHING_VIEW")
 PUBLISHING_VIEW = f"`{PUBLISHING_VIEW}`"
 COLLECTION_NAME = os.getenv("COLLECTION_NAME")
 EVAL_COLLECTION_NAME = os.getenv("EVAL_COLLECTION_NAME")
-QDRANT_HOST = os.getenv("QDRANT_HOST")
+QDRANT_HOST = os.getenv("QDRANT_HOST_EXTERNAL")  # Use external IP address
 QDRANT_PORT = os.getenv("QDRANT_PORT")
 
 config = load_config(".config/config.json")
