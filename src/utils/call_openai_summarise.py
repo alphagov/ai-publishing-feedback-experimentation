@@ -6,6 +6,7 @@ def create_openai_summary(
     user_prompt: str,
     context: str,
     open_api_key: str,
+    model="gpt-3.5-turbo-0125",
 ) -> dict:
     client = OpenAI(api_key=open_api_key)
 
@@ -20,7 +21,7 @@ def create_openai_summary(
             messages=messages,  # type: ignore
             max_tokens=1000,
             temperature=0.2,
-            model="gpt-3.5-turbo-0125",
+            model=model,
         )
         open_summary = completion.choices[0].message.content
         prompt_tokens = completion.usage.prompt_tokens

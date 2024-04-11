@@ -4,6 +4,7 @@ import logging
 from logging.handlers import TimedRotatingFileHandler
 import os
 import subprocess
+import uuid
 
 import streamlit as st
 import streamlit_authenticator as stauth
@@ -150,6 +151,7 @@ client = load_qdrant_client()
 model = load_model(HF_MODEL_NAME)
 
 config = load_config(".config/config.json")
+openai_model_name = config.get("openai_model_name")
 similarity_threshold = float(config.get("similarity_threshold_1"))
 max_context_records = int(config.get("max_records_for_summarisation"))
 min_records_for_summarisation = int(config.get("min_records_for_summarisation"))
@@ -492,14 +494,17 @@ def main():
                 feedback_for_context = available_feedback_for_context[
                     :num_feedback_for_context
                 ]
+
+                openai_user_query_id = uuid.uuid4()
                 summary = create_openai_summary(
                     system_prompt,
                     user_prompt,
                     feedback_for_context,
                     OPENAI_API_KEY,
+                    model=openai_model_name,
                 )
                 logger.info(
-                    f"user_id | {browser_session_id} | session_id:{session_id} | OpenAI summary generated on {len(feedback_for_context)}"
+                    f"user_id | {browser_session_id} | session_id:{session_id} | OpenAI user_query_id {str(openai_user_query_id)} | OpenAI summary generated on {len(feedback_for_context)} feedback records with model {openai_model_name}, {str(summary['prompt_tokens'])} prompt tokens and {str(summary['completion_tokens'])} completion tokens"
                 )
                 st.subheader(
                     f"Top themes based on {num_feedback_for_context} records of user feedback"
