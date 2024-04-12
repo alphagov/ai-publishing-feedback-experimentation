@@ -17,6 +17,12 @@ EVALUATION_TABLE = f"`{EVALUATION_TABLE}`"
 
 
 def main(save_outputs: bool = False):
+    """
+    Main function to get data for evaluation and save the outputs as pickle files
+
+    Requirements:
+    A labelled BQ table with records and labels
+    """
     print("Querying BQ ...")
     # Get data for evaluation
     try:
@@ -36,13 +42,13 @@ def main(save_outputs: bool = False):
 
     if save_outputs:
         # Save regex_counts as a pickle file
-        with open("../data/regex_counts.pkl", "wb") as f:
+        with open("data/regex_counts.pkl", "wb") as f:
             pickle.dump(regex_counts, f)
         # Save regex_ids as a pickle file
-        with open("../data/regex_ids.pkl", "wb") as f:
+        with open("data/regex_ids.pkl", "wb") as f:
             pickle.dump(regex_ids, f)
         # Save unique_labels as a pickle file
-        with open("../data/unique_labels.pkl", "wb") as f:
+        with open("data/unique_labels.pkl", "wb") as f:
             pickle.dump(unique_labels, f)
 
 

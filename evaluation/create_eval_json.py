@@ -24,19 +24,25 @@ EVALUATION_TABLE = f"`{EVALUATION_TABLE}`"
 
 
 def main(save_outputs: bool = False):
-    if not os.exists("../data/unique_labels.pkl") or not os.exists(
-        "../data/regex_ids.pkl"
+    """
+    Main function to get data for analysis and save the outputs as pickle files
+
+    Requirements:
+        Pickle files for unique labels and regex_ids. A Qdrant client and an encoder model.
+    """
+    if not os.path.exists("data/unique_labels.pkl") or not os.path.exists(
+        "data/regex_ids.pkl"
     ):
         # run the evaluation/output_pkl.py script
         print("Running evaluation/output_pkl.py ...")
         subprocess.run(["python", "evaluation/output_pkl.py", "--save_outputs", "True"])
 
     # Load regex_ids
-    with open("../data/regex_ids.pkl", "rb") as f:
+    with open("data/regex_ids.pkl", "rb") as f:
         regex_ids = pickle.load(f)
 
     # Load unique labels
-    with open("../data/unique_labels.pkl", "rb") as f:
+    with open("data/unique_labels.pkl", "rb") as f:
         unique_labels = pickle.load(f)
 
     # Load qdrant client and model
@@ -47,35 +53,61 @@ def main(save_outputs: bool = False):
         print(f"Error: {e}")
 
     # Loop over unique labels and similarity thresholds and return vals
-    try:
-        precision_values = []
-        recall_values = []
-        for unique_label in unique_labels:
-            for threshold in np.arange(0, 1.1, 0.1):
-                precision, recall = calculate_metrics(
-                    unique_label=unique_label,
-                    regex_ids=regex_ids,
-                    model=model,
-                    client=qdrant,
-                    similarity_threshold=threshold,
-                    collection_name=COLLECTION_NAME,
-                )
-                precision_values.append({unique_label: {threshold: precision}})
-                recall_values.append({unique_label: {threshold: recall}})
+    # TODO: Parallelise or async this loop using joblib or asyncio
+    precision_values = []
+    recall_values = []
+    f2_scores = []
+    batch_size = 100
+    num_batches = len(unique_labels) // batch_size + 1
 
-        # Print first 10 values
-        print(precision_values[:10])
-        print(recall_values[:10])
-    except Exception as e:
-        print(f"Error: {e}")
+    for batch_idx in range(num_batches):
+        start_idx = batch_idx * batch_size
+        end_idx = min((batch_idx + 1) * batch_size, len(unique_labels))
+        batch_labels = unique_labels[start_idx:end_idx]
+
+        for unique_label in batch_labels:
+            label_precision = {}
+            label_recall = {}
+            label_f2_scores = {}
+
+            for threshold in np.arange(0, 1.1, 0.1):
+                try:
+                    precision, recall, f2_score = calculate_metrics(
+                        unique_label=unique_label,
+                        regex_ids=regex_ids,
+                        model=model,
+                        client=qdrant,
+                        similarity_threshold=threshold,
+                        collection_name=COLLECTION_NAME,
+                    )
+                    label_precision[threshold] = precision
+                    label_recall[threshold] = recall
+                    label_f2_scores[threshold] = f2_score
+                except Exception as e:
+                    print(
+                        f"Error processing {unique_label} at threshold {threshold}: {e}"
+                    )
+
+            precision_values.append({unique_label: label_precision})
+            recall_values.append({unique_label: label_recall})
+            f2_scores.append({unique_label: label_f2_scores})
+        print(f"Metrics calculated for labels index {start_idx} to {end_idx}")
+
+    # Print first 10 values
+    print(precision_values[:10])
+    print(recall_values[:10])
+    print(f2_scores[:10])
 
     # pickle precision and recall values if argument is True
     if save_outputs:
-        with open("../data/precision_values.pkl", "wb") as f:
+        with open("data/precision_values.pkl", "wb") as f:
             pickle.dump(precision_values, f)
 
-        with open("../data/recall_values.pkl", "wb") as f:
+        with open("data/recall_values.pkl", "wb") as f:
             pickle.dump(recall_values, f)
+
+        with open("data/f2_scores.pkl", "wb") as f:
+            pickle.dump(f2_scores, f)
 
 
 if __name__ == "__main__":

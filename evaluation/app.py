@@ -43,11 +43,15 @@ with open("data/precision_values.pkl", "rb") as f:
 with open("data/recall_values.pkl", "rb") as f:
     recall_values = pickle.load(f)
 
+with open("data/f2_scorest.pkl", "rb") as f:
+    f2scores = pickle.load(f)
+
 
 precision_boxplot_data = create_precision_boxplot_data(precision_values)
 recall_boxplot_data = create_recall_boxplot_data(recall_values)
 precision_line_data = create_precision_line_data(precision_values)
 recall_line_data = create_recall_line_data(recall_values)
+f2scores_line_data = create_recall_line_data(f2scores)
 
 
 # Streamlit app
@@ -62,11 +66,13 @@ def main():
     thresholds = list(precision_line_data.keys())
     precision_scores = list(precision_line_data.values())
     recall_scores = list(recall_line_data.values())
+    f2scores = list(f2scores_line_data.values())
 
     # Find the precision score for the selected threshold
     selected_precision_index = thresholds.index(selected_threshold)
     selected_precision = precision_scores[selected_precision_index]
     selected_recall = recall_scores[selected_precision_index]
+    selected_f2 = f2scores[selected_precision_index]
 
     # Display the selected precision score
     col1, col2, col3 = st.columns(3)
@@ -75,7 +81,7 @@ def main():
     with col2:
         st.metric("Recall Score", selected_recall)
     with col3:
-        st.metric("F2 score placeholder", 0)
+        st.metric("F2 score", selected_f2)
 
     # Plot
     fig = go.Figure()
@@ -87,6 +93,7 @@ def main():
     fig.add_trace(
         go.Scatter(x=thresholds, y=recall_scores, mode="lines", name="Recall")
     )
+    fig.add_trace(go.Scatter(x=thresholds, y=f2scores, mode="lines", name="F2 score"))
 
     # Add a point to highlight the selected threshold and precision score
     fig.add_trace(
@@ -110,11 +117,22 @@ def main():
         )
     )
 
+    # Add a point to highlight the selected threshold and f2 score
+    fig.add_trace(
+        go.Scatter(
+            x=[selected_threshold],
+            y=[selected_f2],
+            mode="markers",
+            marker=dict(color="green", size=10),
+            name="Selected",
+        )
+    )
+
     # Update layout to add titles and make it clearer
     fig.update_layout(
-        title="Threshold vs. Precision/Recall Score",
+        title="Threshold vs. Precision/Recall/F2 Score",
         xaxis_title="Threshold",
-        yaxis_title="Precision/Recall Score",
+        yaxis_title="Precision/Recall/F2 Score",
     )
 
     # Show the plot
