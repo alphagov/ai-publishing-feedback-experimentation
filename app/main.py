@@ -552,7 +552,7 @@ def main():
                     num_tokens_user_prompt = get_num_tokens_from_string(
                         str(user_prompt_context), openai_model_name
                     )
-                with st.spinner("Running search..."):
+                with st.spinner("Summarising..."):
                     summary, status = create_openai_summary(
                         system_prompt=system_prompt,
                         user_prompt=user_prompt_context,
