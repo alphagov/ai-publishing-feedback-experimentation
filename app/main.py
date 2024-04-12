@@ -304,6 +304,14 @@ def main():
         else:
             matched_page_paths = []
 
+        st.sidebar.subheader("By publishing organisation")
+        org_input = st.sidebar.multiselect(
+            "Select publishing organisation:",
+            filter_options["organisation"],
+            default=[],
+            key="org_input",
+        )
+
         st.sidebar.divider()
         st.sidebar.header("Narrow your search\n")
         st.sidebar.subheader("By urgency")
@@ -317,14 +325,6 @@ def main():
 
         # translate urgency rating to human readable
         urgency_input = [urgency_translate[value] for value in urgency_user_input]
-
-        st.sidebar.subheader("By publishing organisation")
-        org_input = st.sidebar.multiselect(
-            "Select publishing organisation:",
-            filter_options["organisation"],
-            default=[],
-            key="org_input",
-        )
 
         st.sidebar.subheader("By content type")
         doc_type_input = st.sidebar.multiselect(
@@ -406,16 +406,15 @@ def main():
                 query_embedding = model.encode(search_terms)
                 # Call the search function with filters
                 print(f"Running semantic search on {COLLECTION_NAME}...")
-                st.write("Running search...")
                 try:
-                    search_results = get_semantically_similar_results(
-                        client=client,
-                        collection_name=COLLECTION_NAME,
-                        query_embedding=query_embedding,
-                        score_threshold=similarity_threshold,
-                        filter_dict=filter_dict,
-                    )
-
+                    with st.spinner("Running search..."):
+                        search_results = get_semantically_similar_results(
+                            client=client,
+                            collection_name=COLLECTION_NAME,
+                            query_embedding=query_embedding,
+                            score_threshold=similarity_threshold,
+                            filter_dict=filter_dict,
+                        )
                     results = [dict(result) for result in search_results]
                     logger.info(
                         f"user_id:{browser_session_id} | session_id:{session_id} | running semantic search for '{search_terms}' returned {len(results)} results"
@@ -425,19 +424,22 @@ def main():
                     st.stop()
             elif (
                 len(search_term_input) == 0
-                and any(len(filter_dict[key]) > 0 for key in ["url"]) > 0
+                and any(
+                    len(filter_dict[key]) > 0 for key in ["url", "primary_department"]
+                )
+                > 0
             ):
-                st.write("Running search...")
                 logger.info(
                     f"user_id | {browser_session_id} | session_id:{session_id} | running filter search with filters {filter_dict}..."
                 )
                 # Call the filter function
                 try:
-                    search_results = filter_search(
-                        client=client,
-                        collection_name=COLLECTION_NAME,
-                        filter_dict=filter_dict,
-                    )
+                    with st.spinner("Running search..."):
+                        search_results = filter_search(
+                            client=client,
+                            collection_name=COLLECTION_NAME,
+                            filter_dict=filter_dict,
+                        )
                     data, _ = search_results
                     results = [dict(result) for result in data]
                     logger.info(
@@ -451,7 +453,7 @@ def main():
                     f"user_id | {browser_session_id} | session_id:{session_id} | attempted to run search without providing a search term or URL"
                 )
                 st.write(
-                    "Please supply a search term or URL(s) and hit 'Explore Feedback' to see results..."
+                    "Please supply a search term, URL or publishing organisation and hit 'Explore Feedback' to see results..."
                 )
                 st.stop()
 
@@ -550,14 +552,14 @@ def main():
                     num_tokens_user_prompt = get_num_tokens_from_string(
                         str(user_prompt_context), openai_model_name
                     )
-
-                summary, status = create_openai_summary(
-                    system_prompt=system_prompt,
-                    user_prompt=user_prompt_context,
-                    open_api_key=OPENAI_API_KEY,
-                    model=openai_model_name,
-                    seed=seed,
-                )
+                with st.spinner("Summarising..."):
+                    summary, status = create_openai_summary(
+                        system_prompt=system_prompt,
+                        user_prompt=user_prompt_context,
+                        open_api_key=OPENAI_API_KEY,
+                        model=openai_model_name,
+                        seed=seed,
+                    )
                 logger.info(
                     f"user_id | {browser_session_id} | session_id:{session_id} | OpenAI user_query_id {str(openai_user_query_id)} | OpenAI call status: {status}"
                 )
