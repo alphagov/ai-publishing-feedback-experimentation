@@ -1,13 +1,11 @@
 from src.utils.utils import load_qdrant_client
 from src.utils.utils import load_model
-from src.collection.evaluate_collection import (
-    calculate_metrics,
-)
+from src.collection.evaluate_collection import process_labels
 
 from dotenv import load_dotenv
+import asyncio
 import os
 import pickle
-import numpy as np
 import argparse
 import subprocess
 
@@ -23,7 +21,7 @@ EVALUATION_TABLE = os.getenv("EVALUATION_TABLE")
 EVALUATION_TABLE = f"`{EVALUATION_TABLE}`"
 
 
-def main(save_outputs: bool = False):
+async def main(save_outputs: bool = False):
     """
     Main function to get data for analysis and save the outputs as pickle files
 
@@ -53,45 +51,14 @@ def main(save_outputs: bool = False):
         print(f"Error: {e}")
 
     # Loop over unique labels and similarity thresholds and return vals
-    # TODO: Parallelise or async this loop using joblib or asyncio
-    precision_values = []
-    recall_values = []
-    f2_scores = []
-    batch_size = 100
-    num_batches = len(unique_labels) // batch_size + 1
-
-    for batch_idx in range(num_batches):
-        start_idx = batch_idx * batch_size
-        end_idx = min((batch_idx + 1) * batch_size, len(unique_labels))
-        batch_labels = unique_labels[start_idx:end_idx]
-
-        for unique_label in batch_labels:
-            label_precision = {}
-            label_recall = {}
-            label_f2_scores = {}
-
-            for threshold in np.arange(0, 1.1, 0.1):
-                try:
-                    precision, recall, f2_score = calculate_metrics(
-                        unique_label=unique_label,
-                        regex_ids=regex_ids,
-                        model=model,
-                        client=qdrant,
-                        similarity_threshold=threshold,
-                        collection_name=COLLECTION_NAME,
-                    )
-                    label_precision[threshold] = precision
-                    label_recall[threshold] = recall
-                    label_f2_scores[threshold] = f2_score
-                except Exception as e:
-                    print(
-                        f"Error processing {unique_label} at threshold {threshold}: {e}"
-                    )
-
-            precision_values.append({unique_label: label_precision})
-            recall_values.append({unique_label: label_recall})
-            f2_scores.append({unique_label: label_f2_scores})
-        print(f"Metrics calculated for labels index {start_idx} to {end_idx}")
+    # TODO: Is this actually async'd, it still takes ages?
+    precision_values, recall_values, f2_scores = await process_labels(
+        unique_labels=unique_labels,
+        regex_ids=regex_ids,
+        model=model,
+        client=qdrant,
+        collection_name=COLLECTION_NAME,
+    )
 
     # Print first 10 values
     print(precision_values[:10])
@@ -114,4 +81,4 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--save_outputs", type=bool, default=False)
     args = parser.parse_args()
-    main(save_outputs=args.save_outputs)
+    asyncio.run(main(save_outputs=args.save_outputs))

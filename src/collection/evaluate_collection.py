@@ -1,5 +1,6 @@
 from typing import List
 from collections import defaultdict
+import asyncio
 import regex as re
 from qdrant_client import QdrantClient
 import numpy as np
@@ -475,7 +476,7 @@ def create_f2_line_data(f2_values: list[dict]):
     return mean_f2_values
 
 
-def calculate_metrics(
+async def async_calculate_metrics(
     unique_label: str,
     regex_ids: dict,
     model: object,
@@ -506,15 +507,17 @@ def calculate_metrics(
 
     # Retrieve the top K results for the label
     try:
-        results = get_semantically_similar_results(
-            client=client,
-            collection_name=collection_name,
-            query_embedding=query_embedding,
-            score_threshold=similarity_threshold,
+        results = await asyncio.to_thread(
+            get_semantically_similar_results,
+            client,
+            collection_name,
+            query_embedding,
+            similarity_threshold,
         )
+
     except Exception as e:
         print(f"get_semantically_similar_results error: {e}")
-        pass
+        return None, None, None
 
     result_ids = [str(result.id) for result in results]
 
@@ -524,3 +527,47 @@ def calculate_metrics(
     f2_score = calculate_f2_score(precision, recall)
 
     return precision, recall, f2_score
+
+
+# TODO: this function takes ages even though it's async, why? I'm probably not asyncing each batch, rather the whole thing?
+async def process_labels(unique_labels, regex_ids, model, client, collection_name):
+    precision_values = []
+    recall_values = []
+    f2_scores = []
+    batch_size = 100
+    num_batches = len(unique_labels) // batch_size + 1
+
+    for batch_idx in range(num_batches):
+        start_idx = batch_idx * batch_size
+        end_idx = min((batch_idx + 1) * batch_size, len(unique_labels))
+        batch_labels = unique_labels[start_idx:end_idx]
+
+        for unique_label in batch_labels:
+            label_precision = {}
+            label_recall = {}
+            label_f2_scores = {}
+
+            for threshold in np.arange(0, 1.1, 0.1):
+                try:
+                    precision, recall, f2_score = await async_calculate_metrics(
+                        unique_label=unique_label,
+                        regex_ids=regex_ids,
+                        model=model,
+                        client=client,
+                        similarity_threshold=threshold,
+                        collection_name=collection_name,
+                    )
+                    label_precision[threshold] = precision
+                    label_recall[threshold] = recall
+                    label_f2_scores[threshold] = f2_score
+                except Exception as e:
+                    print(
+                        f"Error processing {unique_label} at threshold {threshold}: {e}"
+                    )
+
+            precision_values.append({unique_label: label_precision})
+            recall_values.append({unique_label: label_recall})
+            f2_scores.append({unique_label: label_f2_scores})
+        print(f"Metrics calculated for labels: {start_idx} to {end_idx}")
+
+    return precision_values, recall_values, f2_scores

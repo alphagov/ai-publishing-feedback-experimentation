@@ -37,13 +37,13 @@ if (
 with open("data/regex_ids.pkl", "rb") as f:
     regex_ids = pickle.load(f)
 
-with open("data/precision_values.pkl", "rb") as f:
+with open("data/precision_values_test.pkl", "rb") as f:
     precision_values = pickle.load(f)
 
-with open("data/recall_values.pkl", "rb") as f:
+with open("data/recall_values_test.pkl", "rb") as f:
     recall_values = pickle.load(f)
 
-with open("data/f2_scorest.pkl", "rb") as f:
+with open("data/f2_scores_test.pkl", "rb") as f:
     f2scores = pickle.load(f)
 
 
