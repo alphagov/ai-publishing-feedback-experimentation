@@ -1,7 +1,7 @@
 import os
 from dotenv import load_dotenv
 
-from src.collection.set_collection import get_latest_snapshot_location
+from src.collection_utils.set_collection import get_latest_snapshot_location
 from src.utils.utils import load_qdrant_client
 
 load_dotenv()
