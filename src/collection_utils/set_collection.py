@@ -114,3 +114,53 @@ def get_latest_snapshot_location(snapshots: list) -> str:
     if snapshots_sorted:
         # Return the name of the latest snapshot
         return snapshots_sorted[0].name
+
+
+def restore_collection_from_snapshot(
+    client: QdrantClient,
+    name: str,
+    size: int,
+    distance_metric: Distance,
+):
+    """Restore a collection from a snapshot
+
+    Args:
+        client (QdrantClient): Qdrant client
+        name (str): name of the collection
+        size (int): size of vectors in the collection
+        distance_metric (Distance): distance metric used in the collection
+
+    Returns:
+        dict: Status and message of the operation
+    """
+
+    try:
+        snapshots = client.list_snapshots(name)
+        print(f"{len(snapshots)} snapshots found for collection {name}")
+    except Exception as e:
+        print(
+            f"Unable to restore existing collection {name} from snapshot. Trying to create empty collection before searching again...: {e}"
+        )
+        try:
+            create_collection(client, name, size=size, distance_metric=distance_metric)
+            snapshots = client.list_snapshots(name)
+        except Exception as e:
+            return {
+                "success": False,
+                "message": f"Unable to restore collection {name} from snapshots via creating empty collection: {e}",
+            }
+
+    try:  # if able to find snapshots for this collection
+        latest_snapshot = get_latest_snapshot_location(snapshots)
+        client.recover_snapshot(
+            name,
+            location=f"file:///qdrant/snapshots/{name}/{latest_snapshot}",
+            wait=True,
+        )
+        return {
+            "success": True,
+            "message": f"Collection {name} restored from snapshot {latest_snapshot}",
+        }
+    except Exception:
+        print(f"No snapshots available for collection {name}")
+        return {"success": False, "message": "No snapshots found"}

@@ -15,6 +15,7 @@ client = load_qdrant_client(QDRANT_HOST, port=QDRANT_PORT)
 for name in [COLLECTION_NAME, EVAL_COLLECTION_NAME]:
     try:
         snapshots = client.list_snapshots(name)
+        print(f"{len(snapshots)} snapshots found for collection {name}")
         latest_snapshot = get_latest_snapshot_location(snapshots)
         # Clean up old snapshots
         for snapshot in snapshots:
@@ -26,4 +27,4 @@ for name in [COLLECTION_NAME, EVAL_COLLECTION_NAME]:
                 print(f"Only latest snapshot remains for collection {name}")
 
     except Exception as e:
-        print(f"Snapshots not found for collection {name}: {e}")
+        print(f"Finished: snapshots not found for collection {name}: {e}")

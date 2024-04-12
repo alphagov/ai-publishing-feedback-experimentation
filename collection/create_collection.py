@@ -8,7 +8,7 @@ from src.collection_utils.set_collection import (
     create_collection,
     create_vectors_from_data,
     upsert_to_collection_from_vectors,
-    get_latest_snapshot_location,
+    restore_collection_from_snapshot,
 )
 from src.sql_queries import query_labelled_feedback, query_all_feedback
 from src.utils.bigquery import query_bigquery
@@ -26,6 +26,11 @@ EVAL_COLLECTION_NAME = os.getenv("EVAL_COLLECTION_NAME")
 QDRANT_HOST = os.getenv("QDRANT_HOST_EXTERNAL")  # Use external IP address
 QDRANT_PORT = os.getenv("QDRANT_PORT")
 
+# Qdrant args
+size = 768
+distance_metric = Distance.COSINE
+
+# TODO: Add logging
 parser = argparse.ArgumentParser(description="Create a Qdrant collection from BigQuery")
 
 # Add arg for populate from snapshot or from BigQuery
@@ -53,11 +58,11 @@ args = parser.parse_args()
 client = load_qdrant_client(QDRANT_HOST, port=QDRANT_PORT)
 
 all_query_read = query_all_feedback.replace("@PUBLISHING_VIEW", str(PUBLISHING_VIEW))
-
 eval_query_read = query_labelled_feedback.replace(
     "@LABELLED_FEEDBACK_TABLE", str(LABELLED_FEEDBACK_TABLE)
 ).replace("@PUBLISHING_VIEW", str(PUBLISHING_VIEW))
 
+# If eval_only, only populate the evaluation collection. Otherwise populate both
 if args.eval_only:
     collections = [(EVAL_COLLECTION_NAME, eval_query_read)]
     print("Running for evaluation collection only")
@@ -67,35 +72,22 @@ else:
         (EVAL_COLLECTION_NAME, eval_query_read),
     ]
 
-snapshots = []
-# Create feedback and eval collections
 for name, query in collections:
     print(f"Running for collection {name}...")
-    # Check if snapshot exists on disk, populate from that if arg
-    try:
-        # If snapshots are available, and we want to use them to restore, list them
-        if args.restore_from_snapshot:
-            snapshots = client.list_snapshots(name)
-            print(f"{len(snapshots)} snapshots found for collection {name}")
-
-    except Exception as e:
-        print(f"Snapshots not available: {e}")
-
-    if snapshots and args.restore_from_snapshot:
-        # If snapshots are available, and we want to use them to restore, restore from latest
-        latest_snapshot = get_latest_snapshot_location(snapshots)
-
-        print(f"Restoring collection {name} from snapshot {latest_snapshot}...")
-        client.recover_snapshot(
+    if args.restore_from_snapshot:
+        print("Attempting to restore from snapshot...")
+        status, message = restore_collection_from_snapshot(
+            client,
             name,
-            location=f"file:///qdrant/snapshots/{name}/{latest_snapshot}",
-            wait=True,
+            size,
+            distance_metric,
         )
-
-    else:
-        # If either no snapshots available, or arg not set, populate from BigQuery
-        print("Restore from snapshot not requested, or snapshots not present")
-
+    if (
+        not args.restore_from_snapshot or status is False
+    ):  # If either no snapshots available, or arg not set, populate from BigQuery
+        print(
+            "Creating collection from vectors: restore from snapshot not requested, or snapshots not present"
+        )
         print("Reading data from BigQuery...")
         docs = query_bigquery(
             PUBLISHING_PROJECT_ID,
@@ -103,7 +95,7 @@ for name, query in collections:
         )
 
         print(f"Creating collection {name} with {len(docs)} documents...")
-        create_collection(client, name, size=768, distance_metric=Distance.COSINE)
+        create_collection(client, name, size=size, distance_metric=distance_metric)
 
         # Convert data into PointStructs for upsertion
         points_to_upsert = create_vectors_from_data(
