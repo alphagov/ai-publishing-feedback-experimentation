@@ -2,6 +2,7 @@ from dotenv import load_dotenv
 import os
 import pickle
 import streamlit as st
+import subprocess
 import plotly.graph_objs as go
 from src.collection.evaluate_collection import (
     create_precision_boxplot_data,
@@ -19,6 +20,18 @@ HF_MODEL_NAME = os.getenv("HF_MODEL_NAME")
 PUBLISHING_PROJECT_ID = os.getenv("PUBLISHING_PROJECT_ID")
 EVALUATION_TABLE = os.getenv("EVALUATION_TABLE")
 EVALUATION_TABLE = f"`{EVALUATION_TABLE}`"
+
+# Check if the pickle files exist
+if (
+    not os.path.exists("data/regex_ids.pkl")
+    or not os.path.exists("data/precision_values.pkl")
+    or not os.path.exists("data/recall_values.pkl")
+):
+    # run the evaluation/create_eval_json.py script
+    print("Running evaluation/create_eval_json.py ...")
+    subprocess.run(
+        ["python", "evaluation/create_eval_json.py", "--save_outputs", "True"]
+    )
 
 # Load the data
 with open("data/regex_ids.pkl", "rb") as f:

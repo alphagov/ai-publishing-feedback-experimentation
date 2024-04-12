@@ -9,6 +9,7 @@ import os
 import pickle
 import numpy as np
 import argparse
+import subprocess
 
 load_dotenv()
 
@@ -23,37 +24,50 @@ EVALUATION_TABLE = f"`{EVALUATION_TABLE}`"
 
 
 def main(save_outputs: bool = False):
+    if not os.exists("../data/unique_labels.pkl") or not os.exists(
+        "../data/regex_ids.pkl"
+    ):
+        # run the evaluation/output_pkl.py script
+        print("Running evaluation/output_pkl.py ...")
+        subprocess.run(["python", "evaluation/output_pkl.py", "--save_outputs", "True"])
+
     # Load regex_ids
     with open("../data/regex_ids.pkl", "rb") as f:
-        regex_ids = pickle.load(f)  # TODO: Probably add this download into this script
+        regex_ids = pickle.load(f)
 
     # Load unique labels
     with open("../data/unique_labels.pkl", "rb") as f:
         unique_labels = pickle.load(f)
 
     # Load qdrant client and model
-    qdrant = load_qdrant_client(QDRANT_HOST, port=QDRANT_PORT)
-    model = load_model(HF_MODEL_NAME)
+    try:
+        qdrant = load_qdrant_client(QDRANT_HOST, port=QDRANT_PORT)
+        model = load_model(HF_MODEL_NAME)
+    except Exception as e:
+        print(f"Error: {e}")
 
     # Loop over unique labels and similarity thresholds and return vals
-    precision_values = []
-    recall_values = []
-    for unique_label in unique_labels:
-        for threshold in np.arange(0, 1.1, 0.1):
-            precision, recall = calculate_metrics(
-                unique_label=unique_label,
-                regex_ids=regex_ids,
-                model=model,
-                client=qdrant,
-                similarity_threshold=threshold,
-                collection_name=COLLECTION_NAME,
-            )
-            precision_values.append({unique_label: {threshold: precision}})
-            recall_values.append({unique_label: {threshold: recall}})
+    try:
+        precision_values = []
+        recall_values = []
+        for unique_label in unique_labels:
+            for threshold in np.arange(0, 1.1, 0.1):
+                precision, recall = calculate_metrics(
+                    unique_label=unique_label,
+                    regex_ids=regex_ids,
+                    model=model,
+                    client=qdrant,
+                    similarity_threshold=threshold,
+                    collection_name=COLLECTION_NAME,
+                )
+                precision_values.append({unique_label: {threshold: precision}})
+                recall_values.append({unique_label: {threshold: recall}})
 
-    # Print first 10 values
-    print(precision_values[:10])
-    print(recall_values[:10])
+        # Print first 10 values
+        print(precision_values[:10])
+        print(recall_values[:10])
+    except Exception as e:
+        print(f"Error: {e}")
 
     # pickle precision and recall values if argument is True
     if save_outputs:
