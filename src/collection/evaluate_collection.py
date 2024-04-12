@@ -13,13 +13,13 @@ from src.utils.bigquery import query_bigquery
 from src.utils.utils import load_model
 
 
-def calculate_precision(retrieved_records: list, relevant_records: int) -> float:
+def calculate_precision(retrieved_records: list, relevant_records: list) -> float:
     """
     Calculate precision
 
     Args:
-        retrieved_records (int): Number of retrieved records
-        relevant_records (int): Number of relevant records
+        retrieved_records (list): list of retrieved records
+        relevant_records (list): list of relevant records
 
     Returns:
         float: Precision
@@ -28,13 +28,13 @@ def calculate_precision(retrieved_records: list, relevant_records: int) -> float
     return true_positives / len(retrieved_records) if retrieved_records else 0
 
 
-def calculate_recall(retrieved_records: dict, relevant_records: int) -> float:
+def calculate_recall(retrieved_records: list, relevant_records: list) -> float:
     """
     Calculate recall
 
     Args:
-        retrieved_records (int): Number of retrieved records
-        relevant_records (int): Number of relevant records
+        retrieved_records (list): list of retrieved records
+        relevant_records (list): list of relevant records
 
     Returns:
         float: Recall
@@ -43,7 +43,7 @@ def calculate_recall(retrieved_records: dict, relevant_records: int) -> float:
     return true_positives / len(relevant_records) if relevant_records else 0
 
 
-def calculate_f1_score(precision: dict, recall: int) -> float:
+def calculate_f1_score(precision: float, recall: float) -> float:
     """
     Calculate F1 score
 
@@ -61,7 +61,7 @@ def calculate_f1_score(precision: dict, recall: int) -> float:
     )
 
 
-def calculate_f2_score(precision: dict, recall: int) -> float:
+def calculate_f2_score(precision: float, recall: float) -> float:
     """
     Calculate F2 score
 
@@ -459,6 +459,22 @@ def create_recall_line_data(recall_values: list[dict]):
     return mean_recall_values
 
 
+def create_f2_line_data(f2_values: list[dict]):
+    """
+    Create data for F2 line plot
+
+    Args:
+        f2_values (list): List of F2 values
+
+    Returns:
+        dict: Dictionary of F2 values"""
+    # Calculate mean values for each threshold
+    mean_f2_values = calculate_mean_values(f2_values)
+    # Round the keys and values to 2 decimal places
+    mean_f2_values = {round(k, 2): round(v, 2) for k, v in mean_f2_values.items()}
+    return mean_f2_values
+
+
 def calculate_metrics(
     unique_label: str,
     regex_ids: dict,
@@ -505,5 +521,6 @@ def calculate_metrics(
     # Calculate precision and recall
     precision = calculate_precision(result_ids, relevant_records)
     recall = calculate_recall(result_ids, relevant_records)
+    f2_score = calculate_f2_score(precision, recall)
 
-    return precision, recall
+    return precision, recall, f2_score
