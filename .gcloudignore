@@ -1,0 +1,10 @@
+__pycache__
+*.pyc
+*.pyo
+*.pyd
+.Python
+*.env
+evaluation
+notebooks
+qdrant_data
+qdrant_storage

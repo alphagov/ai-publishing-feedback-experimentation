@@ -1,6 +1,6 @@
 import os
 
-from src.collection.evaluate_collection import (
+from src.collection_utils.evaluate_collection import (
     assess_retrieval_accuracy,
     assess_scroll_retrieval,
     get_all_regex_counts,
@@ -9,16 +9,21 @@ from src.collection.evaluate_collection import (
 )
 from src.utils.utils import load_config, load_qdrant_client
 
+from dotenv import load_dotenv
+
+
+load_dotenv()
+
 # Get env vars
 PUBLISHING_PROJECT_ID = os.getenv("PUBLISHING_PROJECT_ID")
 EVALUATION_TABLE = os.getenv("EVALUATION_TABLE")
 QDRANT_HOST = os.getenv("QDRANT_HOST")
 QDRANT_PORT = os.getenv("QDRANT_PORT")
-EVAL_COLLECTION_NAME = os.getenv("EVAL_COLLECTION_NAME")
+EVAL_COLLECTION_NAME = os.getenv("COLLECTION_NAME")
 HF_MODEL_NAME = os.getenv("HF_MODEL_NAME")
 
 config = load_config(".config/config.json")
-similarity_threshold = float(config.get("dot_product_threshold_1"))
+similarity_threshold = float(config.get("similarity_threshold_1"))
 print(f"Similarity threshold: {similarity_threshold}")
 
 # Initialize a Qdrant client <- want to call our local client

@@ -4,7 +4,7 @@ import argparse
 
 from qdrant_client.http.models import Distance
 
-from src.collection.set_collection import (
+from src.collection_utils.set_collection import (
     create_collection,
     create_vectors_from_data,
     upsert_to_collection_from_vectors,
@@ -14,13 +14,16 @@ from src.sql_queries import query_labelled_feedback, query_all_feedback
 from src.utils.bigquery import query_bigquery
 from src.utils.utils import load_qdrant_client
 
+
 load_dotenv()
+
 PUBLISHING_PROJECT_ID = os.getenv("PUBLISHING_PROJECT_ID")
 LABELLED_FEEDBACK_TABLE = os.getenv("EVALUATION_TABLE")
 PUBLISHING_VIEW = os.getenv("PUBLISHING_VIEW")
+PUBLISHING_VIEW = f"`{PUBLISHING_VIEW}`"
 COLLECTION_NAME = os.getenv("COLLECTION_NAME")
 EVAL_COLLECTION_NAME = os.getenv("EVAL_COLLECTION_NAME")
-QDRANT_HOST = os.getenv("QDRANT_HOST")
+QDRANT_HOST = os.getenv("QDRANT_HOST_EXTERNAL")  # Use external IP address
 QDRANT_PORT = os.getenv("QDRANT_PORT")
 
 parser = argparse.ArgumentParser(description="Create a Qdrant collection from BigQuery")

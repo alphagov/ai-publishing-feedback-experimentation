@@ -17,6 +17,9 @@ google-cloud-bigquery = "^3.18.0"
 openai = "^1.13.3"
 python-dotenv = "^1.0.1"
 streamlit-js-eval = "^0.1.7"
+streamlit-authenticator = "^0.3.2"
+google-cloud-logging = "^3.10.0"
+tiktoken = "^0.6.0"
 
 
 [tool.poetry.group.dev.dependencies]

@@ -3,7 +3,7 @@ from typing import List
 import regex as re
 from qdrant_client import QdrantClient
 
-from src.collection.query_collection import (
+from src.collection_utils.query_collection import (
     filter_search,
     get_semantically_similar_results,
 )
@@ -173,7 +173,7 @@ def get_all_regex_counts(data: List[dict]) -> dict:
 
 def get_regex_ids(label: str, data: List[dict]) -> List[str]:
     """
-    Given 1 label, use re.findall to get a list of IDs that match the label.
+    Given 1 label, use re.search to get a list of IDs that match the label.
 
     Args:
         label (str): A unique label to search for.
