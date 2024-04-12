@@ -1,8 +1,6 @@
 from src.utils.utils import load_qdrant_client
 from src.utils.utils import load_model
 from src.collection.evaluate_collection import (
-    get_unique_labels,
-    get_data_for_evaluation,
     calculate_metrics,
 )
 
@@ -27,20 +25,15 @@ EVALUATION_TABLE = f"`{EVALUATION_TABLE}`"
 def main(save_outputs: bool = False):
     # Load regex_ids
     with open("../data/regex_ids.pkl", "rb") as f:
-        regex_ids = pickle.load(f)
+        regex_ids = pickle.load(f)  # TODO: Probably add this download into this script
+
+    # Load unique labels
+    with open("../data/unique_labels.pkl", "rb") as f:
+        unique_labels = pickle.load(f)
 
     # Load qdrant client and model
     qdrant = load_qdrant_client(QDRANT_HOST, port=QDRANT_PORT)
     model = load_model(HF_MODEL_NAME)
-
-    # Get data for evaluation
-    data = get_data_for_evaluation(
-        project_id=PUBLISHING_PROJECT_ID,
-        evaluation_table=EVALUATION_TABLE,
-    )
-
-    # Get unique labels
-    unique_labels = get_unique_labels(data)
 
     # Loop over unique labels and similarity thresholds and return vals
     precision_values = []
