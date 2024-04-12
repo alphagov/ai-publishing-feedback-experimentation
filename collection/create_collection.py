@@ -76,14 +76,15 @@ for name, query in collections:
     print(f"Running for collection {name}...")
     if args.restore_from_snapshot:
         print("Attempting to restore from snapshot...")
-        status, message = restore_collection_from_snapshot(
+        operation = restore_collection_from_snapshot(
             client,
             name,
             size,
             distance_metric,
         )
-    if (
-        not args.restore_from_snapshot or status is False
+        print(f"Restore from snapshot: {operation['success']}, {operation['message']}")
+    if not all(
+        [operation["success"], args.restore_from_snapshot]
     ):  # If either no snapshots available, or arg not set, populate from BigQuery
         print(
             "Creating collection from vectors: restore from snapshot not requested, or snapshots not present"
