@@ -52,12 +52,16 @@ async def main(save_outputs: bool = False):
 
     # Loop over unique labels and similarity thresholds and return vals
     # TODO: Is this actually async'd, it still takes ages?
+    # precision_values, recall_values, f2_scores = await process_labels(
+    #     unique_labels=unique_labels,
+    #     regex_ids=regex_ids,
+    #     model=model,
+    #     client=qdrant,
+    #     collection_name=COLLECTION_NAME,
+    # )
+
     precision_values, recall_values, f2_scores = await process_labels(
-        unique_labels=unique_labels,
-        regex_ids=regex_ids,
-        model=model,
-        client=qdrant,
-        collection_name=COLLECTION_NAME,
+        unique_labels, regex_ids, model, qdrant, COLLECTION_NAME
     )
 
     # Print first 10 values
@@ -67,13 +71,13 @@ async def main(save_outputs: bool = False):
 
     # pickle precision and recall values if argument is True
     if save_outputs:
-        with open("data/precision_values.pkl", "wb") as f:
+        with open("data/precision_values_async.pkl", "wb") as f:
             pickle.dump(precision_values, f)
 
-        with open("data/recall_values.pkl", "wb") as f:
+        with open("data/recall_values_async.pkl", "wb") as f:
             pickle.dump(recall_values, f)
 
-        with open("data/f2_scores.pkl", "wb") as f:
+        with open("data/f2_scores_async.pkl", "wb") as f:
             pickle.dump(f2_scores, f)
 
 
