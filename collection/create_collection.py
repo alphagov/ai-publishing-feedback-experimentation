@@ -3,7 +3,7 @@ from dotenv import load_dotenv
 
 from qdrant_client.http.models import Distance
 
-from src.collection.set_collection import (
+from src.collection_utils.set_collection import (
     create_collection,
     create_vectors_from_data,
     upsert_to_collection_from_vectors,
@@ -21,7 +21,7 @@ PUBLISHING_VIEW = os.getenv("PUBLISHING_VIEW")
 PUBLISHING_VIEW = f"`{PUBLISHING_VIEW}`"
 COLLECTION_NAME = os.getenv("COLLECTION_NAME")
 EVAL_COLLECTION_NAME = os.getenv("EVAL_COLLECTION_NAME")
-QDRANT_HOST = os.getenv("QDRANT_HOST")
+QDRANT_HOST = os.getenv("QDRANT_HOST_EXTERNAL")  # Use external IP address
 QDRANT_PORT = os.getenv("QDRANT_PORT")
 
 config = load_config(".config/config.json")

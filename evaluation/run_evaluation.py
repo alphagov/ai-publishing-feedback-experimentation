@@ -1,6 +1,6 @@
 import os
 import pickle
-from src.collection.evaluate_collection import (
+from src.collection_utils.evaluate_collection import (
     assess_retrieval_accuracy,
     get_data_for_evaluation,
     assess_scroll_retrieval,

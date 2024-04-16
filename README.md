@@ -8,6 +8,13 @@ TODO
 
 ## Technical documentation
 
+You have two options for running the application locally:
+
+1. run it over the remote vector store (Qdrant collection), or
+2. populate a local collection and run over that.
+
+You can run locally either with docker from the command line, or using docker-compose to run everything with one command. You can also deploy the application to Cloud Run using Cloud Build which allows you to run the application in the cloud.
+
 ### Running the application locally using Docker compose
 
 Note: This will run the Streamlit app, the Qdrant database, and the evaluation script on your local machine.
@@ -16,11 +23,19 @@ To run the application, make sure you have docker and docker-compose installed a
 
 You will also need to download data to fill the dashboard dropdowns. The script `app/get_metadata_for_filters.py` does this and is run in `app/main.py`.
 
+### Running the application locally using Docker
+
+To run locally using Docker, you can run `docker run -p 6333:6333 -p 6334:6334 -v $(pwd)/qdrant_storage:/qdrant/storage:z qdrant/qdrant` and then run `python collection/create_collection.py` to populate the local collection, ensuring QDRANT_HOST is set to "localhost" in your environment variables. This may take a while to run
+
+You can then run `streamlit run app/main.py` to run the application locally.
+
 ### Running the application locally using a remote Qdrant database in Compute Engine
 
 Note: This will run ONLY the Streamlit app on your local machine.
 
 To run the application locally using a remote Qdrant database in Compute engine you can simply run `streamlit run app/main.py` from the root directory. This will start the application on your local machine and connect to the remote Qdrant database IF you have the correct environment variables set. The environment variables are stored in the `compute_engine.env` file in the root directory.
+
+_Troubleshooting: Pay particular attention to the QDRANT_HOST environment variable, and ensure that the VM instance is running in Google Compute Engine. If the collection on the VM has not been created/populated yet, run `python collection/create_collection.py` to populate it._
 
 ### Deploy the application to Cloud Run with Cloud Build
 

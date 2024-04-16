@@ -28,8 +28,8 @@ app/app/data/distinct_dimensions.json
 prompts/
 prompts/*
 
-# Models
-models/*
-
 # Logs
 *.log
+
+# Models
+models/*

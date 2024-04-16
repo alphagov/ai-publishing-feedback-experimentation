@@ -36,6 +36,7 @@ def get_semantically_similar_results(
             query_filter=filter,
             score_threshold=score_threshold,
             limit=10000000,
+            timeout=10000,
         )
     else:
         search_result = client.search(
@@ -43,6 +44,7 @@ def get_semantically_similar_results(
             query_vector=query_embedding,
             score_threshold=score_threshold,
             limit=10000000,
+            timeout=10000,
         )
 
     return search_result
