@@ -14,7 +14,7 @@ load_dotenv()
 # Load env variables
 QDRANT_HOST = os.getenv("QDRANT_HOST")
 QDRANT_PORT = os.getenv("QDRANT_PORT")
-COLLECTION_NAME = os.getenv("COLLECTION_NAME")
+COLLECTION_NAME = os.getenv("EVAL_COLLECTION_NAME")
 HF_MODEL_NAME = os.getenv("HF_MODEL_NAME")
 PUBLISHING_PROJECT_ID = os.getenv("PUBLISHING_PROJECT_ID")
 EVALUATION_TABLE = os.getenv("EVALUATION_TABLE")
@@ -33,7 +33,9 @@ async def main(save_outputs: bool = False):
     ):
         # run the evaluation/output_pkl.py script
         print("Running evaluation/output_pkl.py ...")
-        subprocess.run(["python", "evaluation/output_pkl.py", "--save_outputs", "True"])
+        subprocess.run(
+            ["python", "-u", "evaluation/output_pkl.py", "--save_outputs", "True"]
+        )
 
     # Load regex_ids
     with open("data/regex_ids.pkl", "rb") as f:
