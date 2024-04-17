@@ -1,6 +1,6 @@
 from src.utils.utils import load_qdrant_client
 from src.utils.utils import load_model
-from src.collection.evaluate_collection import process_labels
+from src.collection_utils.evaluate_collection import process_labels
 
 from dotenv import load_dotenv
 import asyncio

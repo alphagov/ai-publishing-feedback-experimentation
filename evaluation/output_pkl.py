@@ -1,4 +1,4 @@
-from src.collection.evaluate_collection import (
+from src.collection_utils.evaluate_collection import (
     get_data_for_evaluation,
     get_unique_labels,
     get_all_regex_counts,
