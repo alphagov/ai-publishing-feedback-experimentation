@@ -1,8 +1,9 @@
-from src.utils.utils import load_qdrant_client
+# from src.utils.utils import load_qdrant_client
 from src.utils.utils import load_model
 from src.collection_utils.evaluate_collection import process_labels
 
 from dotenv import load_dotenv
+from qdrant_client import AsyncQdrantClient
 import asyncio
 import os
 import pickle
@@ -19,6 +20,11 @@ HF_MODEL_NAME = os.getenv("HF_MODEL_NAME")
 PUBLISHING_PROJECT_ID = os.getenv("PUBLISHING_PROJECT_ID")
 EVALUATION_TABLE = os.getenv("EVALUATION_TABLE")
 EVALUATION_TABLE = f"`{EVALUATION_TABLE}`"
+
+
+def load_async_client(qdrant_host: str, port: int) -> AsyncQdrantClient:
+    client = AsyncQdrantClient(qdrant_host, port=port)
+    return client
 
 
 async def main(save_outputs: bool = False):
@@ -47,20 +53,10 @@ async def main(save_outputs: bool = False):
 
     # Load qdrant client and model
     try:
-        qdrant = load_qdrant_client(QDRANT_HOST, port=QDRANT_PORT)
+        qdrant = load_async_client(QDRANT_HOST, port=QDRANT_PORT)
         model = load_model(HF_MODEL_NAME)
     except Exception as e:
         print(f"Error: {e}")
-
-    # Loop over unique labels and similarity thresholds and return vals
-    # TODO: Is this actually async'd, it still takes ages?
-    # precision_values, recall_values, f2_scores = await process_labels(
-    #     unique_labels=unique_labels,
-    #     regex_ids=regex_ids,
-    #     model=model,
-    #     client=qdrant,
-    #     collection_name=COLLECTION_NAME,
-    # )
 
     precision_values, recall_values, f2_scores = await process_labels(
         unique_labels, regex_ids, model, qdrant, COLLECTION_NAME

@@ -7,6 +7,7 @@ import numpy as np
 
 from src.collection_utils.query_collection import (
     filter_search,
+    async_get_semantically_similar_results,
     get_semantically_similar_results,
 )
 from src.sql_queries import query_evaluation_data
@@ -508,8 +509,7 @@ async def async_calculate_metrics(
 
     # Retrieve the top K results for the label
     try:
-        results = await asyncio.to_thread(
-            get_semantically_similar_results,
+        results = await async_get_semantically_similar_results(
             client,
             collection_name,
             query_embedding,
