@@ -137,17 +137,17 @@ def restore_collection_from_snapshot(
     try:
         snapshots = client.list_snapshots(name)
         print(f"{len(snapshots)} snapshots found for collection {name}")
-    except Exception as e:
+    except Exception:
         print(
-            f"Unable to restore existing collection {name} from snapshot. Trying to create empty collection before searching again...: {e}"
+            f"Unable to restore existing collection {name} from snapshot. Trying to create empty collection before searching again..."
         )
         try:
             create_collection(client, name, size=size, distance_metric=distance_metric)
             snapshots = client.list_snapshots(name)
-        except Exception as e:
+        except Exception:
             return {
                 "success": False,
-                "message": f"Unable to restore collection {name} from snapshots via creating empty collection: {e}",
+                "message": f"Unable to restore collection {name} from snapshots via creating empty collection",
             }
 
     try:  # if able to find snapshots for this collection
