@@ -23,7 +23,7 @@ PUBLISHING_VIEW = os.getenv("PUBLISHING_VIEW")
 PUBLISHING_VIEW = f"`{PUBLISHING_VIEW}`"
 COLLECTION_NAME = os.getenv("COLLECTION_NAME")
 EVAL_COLLECTION_NAME = os.getenv("EVAL_COLLECTION_NAME")
-QDRANT_HOST = os.getenv("QDRANT_HOST_EXTERNAL")  # Use external IP address
+QDRANT_HOST = os.getenv("QDRANT_HOST")  # Use external IP address
 QDRANT_PORT = os.getenv("QDRANT_PORT")
 
 # Qdrant args
@@ -83,6 +83,10 @@ for name, query in collections:
             distance_metric,
         )
         print(f"Restore from snapshot: {operation['success']}, {operation['message']}")
+        print(f"Collections available: {client.get_collections()}")
+    else:
+        operation = {"success": False}
+
     if not all(
         [operation["success"], args.restore_from_snapshot]
     ):  # If either no snapshots available, or arg not set, populate from BigQuery
