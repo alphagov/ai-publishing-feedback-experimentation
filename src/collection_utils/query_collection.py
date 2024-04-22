@@ -1,4 +1,4 @@
-from qdrant_client import QdrantClient, AsyncQdrantClient
+from qdrant_client import QdrantClient
 
 from qdrant_client.http.models import FieldCondition, Filter, MatchAny
 
@@ -78,51 +78,3 @@ def filter_search(client: QdrantClient, collection_name: str, filter_dict: dict)
         return search_result
     else:
         print("No filters present, provide filters to search")
-
-
-async def async_get_semantically_similar_results(
-    client: AsyncQdrantClient,
-    collection_name: str,
-    query_embedding: list,
-    score_threshold: float,
-    filter_dict={},
-):
-    """Retrieve top k results from collection
-
-    Args:
-        client (AsyncQdrantClient): The  Qdrant client.
-        collection_name (str): The name of the collection.
-        query_embedding (list): The query vector.
-        score_threshold (float): The minimum score to return.
-        filter_dict (dict, optional): The keys and values to filter on. Defaults to {}.
-
-    Returns:
-        list: the results of the search
-    """
-    filter = Filter(
-        must=[
-            FieldCondition(key=filter_key, match=MatchAny(any=filter_values))
-            for filter_key, filter_values in filter_dict.items()
-            if filter_values
-        ]
-    )
-
-    if len(filter_dict) > 0:
-        search_result = await client.search(
-            collection_name=collection_name,
-            query_vector=query_embedding,
-            query_filter=filter,
-            score_threshold=score_threshold,
-            limit=10000000,
-            timeout=10000,
-        )
-    else:
-        search_result = await client.search(
-            collection_name=collection_name,
-            query_vector=query_embedding,
-            score_threshold=score_threshold,
-            limit=10000000,
-            timeout=10000,
-        )
-
-    return search_result

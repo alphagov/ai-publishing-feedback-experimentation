@@ -1,10 +1,8 @@
-# from src.utils.utils import load_qdrant_client
+from src.utils.utils import load_qdrant_client
 from src.utils.utils import load_model
 from src.collection_utils.evaluate_collection import process_labels
 
 from dotenv import load_dotenv
-from qdrant_client import AsyncQdrantClient
-import asyncio
 import os
 import pickle
 import argparse
@@ -22,12 +20,7 @@ EVALUATION_TABLE = os.getenv("EVALUATION_TABLE")
 EVALUATION_TABLE = f"`{EVALUATION_TABLE}`"
 
 
-def load_async_client(qdrant_host: str, port: int) -> AsyncQdrantClient:
-    client = AsyncQdrantClient(qdrant_host, port=port)
-    return client
-
-
-async def main(save_outputs: bool = False):
+def main(save_outputs: bool = False):
     """
     Main function to get data for analysis and save the outputs as pickle files
 
@@ -51,16 +44,61 @@ async def main(save_outputs: bool = False):
     with open("data/unique_labels.pkl", "rb") as f:
         unique_labels = pickle.load(f)
 
-    # Load qdrant client and model
+    # Load Qdrant client and encoder model
     try:
-        qdrant = load_async_client(QDRANT_HOST, port=QDRANT_PORT)
+        qdrant = load_qdrant_client(QDRANT_HOST, port=QDRANT_PORT)
         model = load_model(HF_MODEL_NAME)
     except Exception as e:
         print(f"Error: {e}")
 
-    precision_values, recall_values, f2_scores = await process_labels(
-        unique_labels, regex_ids, model, qdrant, COLLECTION_NAME
+    # Process labels
+    precision_values, recall_values, f2_scores = process_labels(
+        unique_labels=unique_labels,
+        regex_ids=regex_ids,
+        model=model,
+        client=qdrant,
+        collection_name=COLLECTION_NAME,
     )
+
+    # # Loop over unique labels and similarity thresholds and return vals
+    # precision_values = []
+    # recall_values = []
+    # f2_scores = []
+    # batch_size = 100
+    # num_batches = len(unique_labels) // batch_size + 1
+
+    # for batch_idx in range(num_batches):
+    #     start_idx = batch_idx * batch_size
+    #     end_idx = min((batch_idx + 1) * batch_size, len(unique_labels))
+    #     batch_labels = unique_labels[start_idx:end_idx]
+
+    #     for unique_label in batch_labels:
+    #         label_precision = {}
+    #         label_recall = {}
+    #         label_f2_scores = {}
+
+    #         for threshold in np.arange(0, 1.1, 0.1):
+    #             try:
+    #                 precision, recall, f2_score = calculate_metrics(
+    #                     unique_label=unique_label,
+    #                     regex_ids=regex_ids,
+    #                     model=model,
+    #                     client=qdrant,
+    #                     similarity_threshold=threshold,
+    #                     collection_name=COLLECTION_NAME,
+    #                 )
+    #                 label_precision[threshold] = precision
+    #                 label_recall[threshold] = recall
+    #                 label_f2_scores[threshold] = f2_score
+    #             except Exception as e:
+    #                 print(
+    #                     f"Error processing {unique_label} at threshold {threshold}: {e}"
+    #                 )
+
+    #         precision_values.append({unique_label: label_precision})
+    #         recall_values.append({unique_label: label_recall})
+    #         f2_scores.append({unique_label: label_f2_scores})
+    #     print(f"Metrics calculated for labels index {start_idx} to {end_idx}")
 
     # Print first 10 values
     print(precision_values[:10])
@@ -69,18 +107,24 @@ async def main(save_outputs: bool = False):
 
     # pickle precision and recall values if argument is True
     if save_outputs:
-        with open("data/precision_values_async.pkl", "wb") as f:
+        with open("data/precision_values.pkl", "wb") as f:
             pickle.dump(precision_values, f)
 
-        with open("data/recall_values_async.pkl", "wb") as f:
+        print("Precision values saved")
+
+        with open("data/recall_values.pkl", "wb") as f:
             pickle.dump(recall_values, f)
 
-        with open("data/f2_scores_async.pkl", "wb") as f:
+        print("Recall values saved")
+
+        with open("data/f2_scores.pkl", "wb") as f:
             pickle.dump(f2_scores, f)
+
+        print("F2 scores saved")
 
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--save_outputs", type=bool, default=False)
     args = parser.parse_args()
-    asyncio.run(main(save_outputs=args.save_outputs))
+    main(save_outputs=args.save_outputs)

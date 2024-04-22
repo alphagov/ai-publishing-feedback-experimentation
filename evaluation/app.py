@@ -28,9 +28,9 @@ def check_pickle_files():
     data_path = "data"
     required_files = [
         "regex_ids.pkl",
-        "precision_values_async.pkl",
-        "recall_values_async.pkl",
-        "f2_scores_async.pkl",
+        "precision_values.pkl",
+        "recall_values.pkl",
+        "f2_scores.pkl",
     ]
     files_exist = os.path.isdir(data_path) and all(
         os.path.exists(os.path.join(data_path, file)) for file in required_files
@@ -38,8 +38,7 @@ def check_pickle_files():
     return files_exist
 
 
-# Create the pickle files via a cached function
-@st.cache
+# Create the pickle files (no caching so it checks every time)
 def create_files():
     print("Running evaluation/create_eval_json.py ...")
     subprocess.run(
@@ -53,7 +52,7 @@ if not check_pickle_files():
 
 
 # Load the pickle files via a cached function
-@st.cache
+@st.cache_data
 def load_pickle_data(file_path):
     with open(file_path, "rb") as file:
         data = pickle.load(file)
@@ -63,9 +62,9 @@ def load_pickle_data(file_path):
 # Load the pickle files
 # TODO: can I parameterise the list of files so I don't type here and in the check_pickle_files function?
 regex_ids = load_pickle_data("data/regex_ids.pkl")  # TODO: Do I need this?
-recall_values = load_pickle_data("data/recall_values_async.pkl")
-precision_values = load_pickle_data("data/precision_values_async.pkl")
-f2scores = load_pickle_data("data/f2_scores_async.pkl")
+recall_values = load_pickle_data("data/recall_values.pkl")
+precision_values = load_pickle_data("data/precision_values.pkl")
+f2scores = load_pickle_data("data/f2_scores.pkl")
 
 # Create the data for the box plots and line plots
 precision_boxplot_data = create_precision_boxplot_data(precision_values)
@@ -125,6 +124,7 @@ def main():
             mode="markers",
             marker=dict(color="red", size=10),
             name="Selected",
+            showlegend=False,
         )
     )
 
@@ -136,6 +136,7 @@ def main():
             mode="markers",
             marker=dict(color="blue", size=10),
             name="Selected",
+            showlegend=False,
         )
     )
 
@@ -147,6 +148,7 @@ def main():
             mode="markers",
             marker=dict(color="green", size=10),
             name="Selected",
+            showlegend=False,
         )
     )
 

@@ -1,18 +1,16 @@
-from typing import List
 from collections import defaultdict
-import asyncio
 import regex as re
 from qdrant_client import QdrantClient
 import numpy as np
 
 from src.collection_utils.query_collection import (
     filter_search,
-    async_get_semantically_similar_results,
     get_semantically_similar_results,
 )
 from src.sql_queries import query_evaluation_data
 from src.utils.bigquery import query_bigquery
 from src.utils.utils import load_model
+from time import sleep
 
 
 def calculate_precision(retrieved_records: list, relevant_records: list) -> float:
@@ -84,7 +82,7 @@ def calculate_f2_score(precision: float, recall: float) -> float:
 def get_data_for_evaluation(
     evaluation_table: str,
     project_id: str,
-) -> List[dict]:
+) -> list[dict]:
     """
     Query BQ for labelled feedback data. for use in evaluation.
 
@@ -103,15 +101,15 @@ def get_data_for_evaluation(
     return data
 
 
-def get_all_labels(data: List[dict]) -> str:
+def get_all_labels(data: list[dict]) -> str:
     """
     Get all labels from the feedback data.
 
     Args:
-        data (List[dict]): The list of id, labels, and urgency.
+        data (list[dict]): The list of id, labels, and urgency.
 
     Returns:
-        List[str]: The list of labels.
+        list[str]: The list of labels.
     """
     labels = []
     for record in data:
@@ -120,15 +118,15 @@ def get_all_labels(data: List[dict]) -> str:
     return " ".join(labels)
 
 
-def get_unique_labels(data: List[dict]) -> List[str]:
+def get_unique_labels(data: list[dict]) -> list[str]:
     """
     Get unique labels from the feedback data.
 
     Args:
-        data (List[dict]): The list of id, labels, and urgency.
+        data (list[dict]): The list of id, labels, and urgency.
 
     Returns:
-        List[str]: The list of unique labels.
+        list[str]: The list of unique labels.
     """
     unique_labels = set()
     for record in data:
@@ -155,15 +153,15 @@ def get_regex_comparison(label: str, all_labels: str) -> int:
     return {"label": label, "n_matches": matches}
 
 
-def get_all_regex_counts(data: List[dict]) -> dict:
+def get_all_regex_counts(data: list[dict]) -> dict:
     """
     Get the regex counts for all labels.
 
     Args:
-        data (List[dict]): The list of id, labels, and urgency.
+        data (list[dict]): The list of id, labels, and urgency.
 
     Returns:
-        List[dict]: The list of regex counts.
+        list[dict]: The list of regex counts.
     """
     all_labels = get_all_labels(data)  # Get single string of all labels
     unique_labels = get_unique_labels(data)  # Get list of unique labels
@@ -174,16 +172,16 @@ def get_all_regex_counts(data: List[dict]) -> dict:
     return regex_counts  # Return dict
 
 
-def get_regex_ids(label: str, data: List[dict]) -> List[str]:
+def get_regex_ids(label: str, data: list[dict]) -> list[str]:
     """
     Given 1 label, use re.search to get a list of IDs that match the label.
 
     Args:
         label (str): A unique label to search for.
-        data (List[dict]): The list of id, labels, and urgency.
+        data (list[dict]): The list of id, labels, and urgency.
 
     Returns:
-        List[str]: The list of IDs that match the label.
+        list[str]: The list of IDs that match the label.
     """
     ids = []
     for record in data:
@@ -192,15 +190,15 @@ def get_regex_ids(label: str, data: List[dict]) -> List[str]:
     return ids
 
 
-def get_all_regex_ids(data: List[dict]) -> dict:
+def get_all_regex_ids(data: list[dict]) -> dict:
     """
     Get the regex IDs for all labels.
 
     Args:
-        data (List[dict]): The list of id, labels, and urgency.
+        data (list[dict]): The list of id, labels, and urgency.
 
     Returns:
-        List[dict]: The list of regex IDs.
+        list[dict]: The list of regex IDs.
     """
     unique_labels = get_unique_labels(data)  # Get list of unique labels
     regex_ids = {}  # Initialise dict to store label and regex IDs
@@ -214,10 +212,10 @@ def assess_retrieval_accuracy(
     client: QdrantClient,
     collection_name: str,
     model_name: str,
-    data: List[dict],
+    data: list[dict],
     score_threshold: float,
     regex_ids: dict,
-) -> None:
+) -> list[str]:  # TODO: check this is a string list
     """
     Assess the retrieval accuracy of a collection by looping over all unique labels,
     retrieving the top K results for each label, and calculating precision, recall, and F1 score.
@@ -225,12 +223,12 @@ def assess_retrieval_accuracy(
     Args:
         client (Any): The client object.
         collection_name (str): The name of the collection.
-        data (List[dict]): The list of id, labels, and urgency.
+        data (list[dict]): The list of id, labels, and urgency.
         k_threshold (int): The threshold for retrieving top K results.
         regex_ids (dict): The dictionary of regex IDs.
 
     Returns:
-        :List[str]: The list of result IDs.
+        :list[str]: The list of result IDs.
     """
 
     # Load the model once
@@ -282,9 +280,9 @@ def assess_retrieval_accuracy(
 def assess_scroll_retrieval(
     client: QdrantClient,
     collection_name: str,
-    data: List[dict],
+    data: list[dict],
     regex_ids: dict,
-):
+) -> list[str]:  # TODO: check this is a string list
     """
     Assess the retrieval accuracy of a collection by looping over all unique labels,
     and filtering the search results using MatchValue with a given string.
@@ -292,11 +290,11 @@ def assess_scroll_retrieval(
     Args:
         client (Any): The client object.
         collection_name (str): The name of the collection.
-        data (List[dict]): The list of id, labels, and urgency.
+        data (list[dict]): The list of id, labels, and urgency.
         regex_ids (dict): The dictionary of regex IDs.
 
     Returns:
-        :List[str]: The list of result IDs.
+        :list[str]: The list of result IDs.
     """
     # Get unique labels
     unique_labels = get_unique_labels(data)
@@ -339,8 +337,15 @@ def assess_scroll_retrieval(
         return result_ids
 
 
-def calculate_mean_values(data_list):
-    # Dictionary to hold cumulative sums and counts for each test
+def calculate_mean_values(data_list: list[dict]) -> dict:
+    """
+    Calculate the mean values for each word/threshold stored in a dictionary
+
+    Args:
+        data_list (list): list of dictionaries
+
+    Returns:
+        dict: Dictionary of mean values for each threshold"""
     sums_counts = defaultdict(lambda: {"sum": 0, "count": 0})
 
     for item in data_list:
@@ -349,14 +354,22 @@ def calculate_mean_values(data_list):
                 sums_counts[threshold]["sum"] += value
                 sums_counts[threshold]["count"] += 1
 
-    # Calculate mean for each test
     mean_values = {
         test: info["sum"] / info["count"] for test, info in sums_counts.items()
     }
     return mean_values
 
 
-def get_threshold_values(data, input_threshold=0.0):
+def get_threshold_values(data: list[dict], input_threshold: float = 0.0) -> list:
+    """
+    Get values for a given threshold from a list of dictionaries
+
+    Args:
+        data (list): list of dictionaries
+        input_threshold (float): the threshold to search for (default 0)
+
+    Returns:
+        list: list of values for the given threshold"""
     threshold_list = []
     for item in data:
         for threshold, value in item.items():
@@ -365,12 +378,12 @@ def get_threshold_values(data, input_threshold=0.0):
     return threshold_list
 
 
-def create_precision_boxplot_data(precision_values: list[dict]):
+def create_precision_boxplot_data(precision_values: list[dict]) -> dict:
     """
     Create data for precision boxplot
 
     Args:
-        precision_values (list): List of precision values
+        precision_values (list): list of precision values
 
     Returns:
         dict: Dictionary of precision values"""
@@ -395,12 +408,12 @@ def create_precision_boxplot_data(precision_values: list[dict]):
     return rounded_precision_values
 
 
-def create_recall_boxplot_data(recall_values: list[dict]):
+def create_recall_boxplot_data(recall_values: list[dict]) -> dict:
     """
     Create data for recall boxplot
 
     Args:
-        recall_values (list): List of recall values
+        recall_values (list): list of recall values
 
     Returns:
         dict: Dictionary of recall values"""
@@ -425,12 +438,12 @@ def create_recall_boxplot_data(recall_values: list[dict]):
     return rounded_precision_values
 
 
-def create_precision_line_data(precision_values: list[dict]):
+def create_precision_line_data(precision_values: list[dict]) -> dict:
     """
     Create data for precision line plot
 
     Args:
-        precision_values (list): List of precision values
+        precision_values (list): list of precision values
 
     Returns:
         dict: Dictionary of precision values"""
@@ -443,12 +456,12 @@ def create_precision_line_data(precision_values: list[dict]):
     return mean_precision_values
 
 
-def create_recall_line_data(recall_values: list[dict]):
+def create_recall_line_data(recall_values: list[dict]) -> dict:
     """
     Create data for recall line plot
 
     Args:
-        recall_values (list): List of recall values
+        recall_values (list): list of recall values
 
     Returns:
         dict: Dictionary of recall values"""
@@ -461,12 +474,12 @@ def create_recall_line_data(recall_values: list[dict]):
     return mean_recall_values
 
 
-def create_f2_line_data(f2_values: list[dict]):
+def create_f2_line_data(f2_values: list[dict]) -> dict:
     """
     Create data for F2 line plot
 
     Args:
-        f2_values (list): List of F2 values
+        f2_values (list): list of F2 values
 
     Returns:
         dict: Dictionary of F2 values"""
@@ -477,7 +490,7 @@ def create_f2_line_data(f2_values: list[dict]):
     return mean_f2_values
 
 
-async def async_calculate_metrics(
+def calculate_metrics(
     unique_label: str,
     regex_ids: dict,
     model: object,
@@ -509,7 +522,7 @@ async def async_calculate_metrics(
 
     # Retrieve the top K results for the label
     try:
-        results = await async_get_semantically_similar_results(
+        results = get_semantically_similar_results(
             client,
             collection_name,
             query_embedding,
@@ -530,87 +543,87 @@ async def async_calculate_metrics(
     return precision, recall, f2_score
 
 
-# TODO: this function takes ages even though it's async, why? I'm probably not asyncing each batch, rather the whole thing?
-# async def process_labels(unique_labels, regex_ids, model, client, collection_name):
-#     precision_values = []
-#     recall_values = []
-#     f2_scores = []
-#     batch_size = 100
-#     num_batches = len(unique_labels) // batch_size + 1
+def process_labels(unique_labels, regex_ids, model, client, collection_name):
+    precision_values = []
+    recall_values = []
+    f2_scores = []
+    batch_size = 100
+    num_batches = len(unique_labels) // batch_size + 1
 
-#     for batch_idx in range(num_batches):
-#         start_idx = batch_idx * batch_size
-#         end_idx = min((batch_idx + 1) * batch_size, len(unique_labels))
-#         batch_labels = unique_labels[start_idx:end_idx]
+    for batch_idx in range(num_batches):
+        start_idx = batch_idx * batch_size
+        end_idx = min((batch_idx + 1) * batch_size, len(unique_labels))
+        batch_labels = unique_labels[start_idx:end_idx]
 
-#         for unique_label in batch_labels:
-#             label_precision = {}
-#             label_recall = {}
-#             label_f2_scores = {}
+        for unique_label in batch_labels:
+            label_precision = {}
+            label_recall = {}
+            label_f2_scores = {}
 
-#             for threshold in np.arange(0, 1.1, 0.1):
-#                 try:
-#                     precision, recall, f2_score = await async_calculate_metrics(
-#                         unique_label=unique_label,
-#                         regex_ids=regex_ids,
-#                         model=model,
-#                         client=client,
-#                         similarity_threshold=threshold,
-#                         collection_name=collection_name,
-#                     )
-#                     label_precision[threshold] = precision
-#                     label_recall[threshold] = recall
-#                     label_f2_scores[threshold] = f2_score
-#                 except Exception as e:
-#                     print(
-#                         f"Error processing {unique_label} at threshold {threshold}: {e}"
-#                     )
+            for threshold in np.arange(0, 1.1, 0.1):
+                try:
+                    precision, recall, f2_score = calculate_metrics(
+                        unique_label=unique_label,
+                        regex_ids=regex_ids,
+                        model=model,
+                        client=client,
+                        similarity_threshold=threshold,
+                        collection_name=collection_name,
+                    )
+                    label_precision[threshold] = precision
+                    label_recall[threshold] = recall
+                    label_f2_scores[threshold] = f2_score
+                except Exception as e:
+                    print(
+                        f"Error processing {unique_label} at threshold {threshold}: {e}"
+                    )
+                    sleep(0.01)  # Sleep for 10ms to avoid rate limiting
 
-#             precision_values.append({unique_label: label_precision})
-#             recall_values.append({unique_label: label_recall})
-#             f2_scores.append({unique_label: label_f2_scores})
-#         print(f"Metrics calculated for labels: {start_idx} to {end_idx}")
-
-#     return precision_values, recall_values, f2_scores
-
-
-async def process_single_label(unique_label, regex_ids, model, client, collection_name):
-    label_precision = {}
-    label_recall = {}
-    label_f2_scores = {}
-
-    for threshold in np.arange(0, 1.1, 0.1):
-        try:
-            precision, recall, f2_score = await async_calculate_metrics(
-                unique_label=unique_label,
-                regex_ids=regex_ids,
-                model=model,
-                client=client,
-                similarity_threshold=threshold,
-                collection_name=collection_name,
-            )
-            label_precision[threshold] = precision
-            label_recall[threshold] = recall
-            label_f2_scores[threshold] = f2_score
-        except Exception as e:
-            print(f"Error processing {unique_label} at threshold {threshold}: {e}")
-
-    return {
-        "precision": {unique_label: label_precision},
-        "recall": {unique_label: label_recall},
-        "f2_scores": {unique_label: label_f2_scores},
-    }
-
-
-async def process_labels(unique_labels, regex_ids, model, client, collection_name):
-    tasks = [
-        process_single_label(label, regex_ids, model, client, collection_name)
-        for label in unique_labels
-    ]
-    results = await asyncio.gather(*tasks)
-
-    precision_values = [result["precision"] for result in results]
-    recall_values = [result["recall"] for result in results]
-    f2_scores = [result["f2_scores"] for result in results]
+            precision_values.append({unique_label: label_precision})
+            recall_values.append({unique_label: label_recall})
+            f2_scores.append({unique_label: label_f2_scores})
+        print(f"Metrics calculated for labels: {start_idx} to {end_idx}")
 
     return precision_values, recall_values, f2_scores
+
+
+# def process_single_label(unique_label, regex_ids, model, client, collection_name):
+#     label_precision = {}
+#     label_recall = {}
+#     label_f2_scores = {}
+
+#     for threshold in np.arange(0, 1.1, 0.1):
+#         try:
+#             precision, recall, f2_score = calculate_metrics(
+#                 unique_label=unique_label,
+#                 regex_ids=regex_ids,
+#                 model=model,
+#                 client=client,
+#                 similarity_threshold=threshold,
+#                 collection_name=collection_name,
+#             )
+#             label_precision[threshold] = precision
+#             label_recall[threshold] = recall
+#             label_f2_scores[threshold] = f2_score
+#         except Exception as e:
+#             print(f"Error processing {unique_label} at threshold {threshold}: {e}")
+
+#     return {
+#         "precision": {unique_label: label_precision},
+#         "recall": {unique_label: label_recall},
+#         "f2_scores": {unique_label: label_f2_scores},
+#     }
+
+
+# async def process_labels(unique_labels, regex_ids, model, client, collection_name):
+#     tasks = [
+#         process_single_label(label, regex_ids, model, client, collection_name)
+#         for label in unique_labels
+#     ]
+#     results = await asyncio.gather(*tasks)
+
+#     precision_values = [result["precision"] for result in results]
+#     recall_values = [result["recall"] for result in results]
+#     f2_scores = [result["f2_scores"] for result in results]
+
+#     return precision_values, recall_values, f2_scores
