@@ -23,7 +23,6 @@ EVALUATION_TABLE = f"`{EVALUATION_TABLE}`"
 
 
 # Check if the pickle files exist via a cached function
-@st.cache_data
 def check_pickle_files():
     data_path = "data"
     required_files = [
