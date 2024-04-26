@@ -157,6 +157,7 @@ config = load_config(".config/config.json")
 openai_model_name = config.get("openai_model_name")
 token_limit = int(config.get("token_limit"))
 seed = int(config.get("openai_seed"))
+stream = config.get("openai_stream")
 similarity_threshold = float(config.get("similarity_threshold_1"))
 max_context_records = int(config.get("max_records_for_summarisation"))
 min_records_for_summarisation = int(config.get("min_records_for_summarisation"))
@@ -559,13 +560,12 @@ def main():
                         open_api_key=OPENAI_API_KEY,
                         model=openai_model_name,
                         seed=seed,
+                        stream=stream,
                     )
                 logger.info(
                     f"user_id | {browser_session_id} | session_id:{session_id} | OpenAI user_query_id {str(openai_user_query_id)} | OpenAI call status: {status}"
                 )
-                logger.info(
-                    f"user_id | {browser_session_id} | session_id:{session_id} | OpenAI user_query_id {str(openai_user_query_id)} | OpenAI summary generated on {len(feedback_for_context)} feedback records with model {openai_model_name}, {str(summary['prompt_tokens'])} prompt tokens and {str(summary['completion_tokens'])} completion tokens"
-                )
+
                 st.subheader(
                     f"Top themes based on {len(feedback_for_context)} most relevant records of user feedback"
                 )
@@ -573,9 +573,15 @@ def main():
                     "Identified and summarised by AI technology. Please verify the outputs with other data sources to ensure accuracy of information."
                 )
                 try:
-                    st.write(summary["open_summary"])
+                    if stream:
+                        st.write_stream(summary["open_summary"])
+                    else:
+                        st.write(summary["open_summary"])
                     logger.info(
                         f"user_id | {browser_session_id} | session_id:{session_id} | OpenAI user_query_id {str(openai_user_query_id)} | OpenAI summary: {summary['open_summary']}"
+                    )
+                    logger.info(
+                        f"user_id | {browser_session_id} | session_id:{session_id} | OpenAI user_query_id {str(openai_user_query_id)} | OpenAI summary generated on {len(feedback_for_context)} feedback records with model {openai_model_name}, {str(summary['prompt_tokens'])} prompt tokens and {str(summary['completion_tokens'])} completion tokens"
                     )
                 except Exception as e:
                     st.error(f"Error generating summary: {e}")
