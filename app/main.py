@@ -22,10 +22,7 @@ from src.collection_utils.query_collection import (
     get_semantically_similar_results,
 )
 from src.common import renaming_dict, urgency_translate
-from src.utils.call_openai_summarise import (
-    create_openai_summary,
-    get_num_tokens_from_string,
-)
+from src.utils.call_openai_summarise import Summariser
 from src.utils.utils import process_csv_file, process_txt_file, replace_env_variables
 
 
@@ -153,14 +150,24 @@ logger = set_logger()
 client = load_qdrant_client()
 model = load_model(HF_MODEL_NAME)
 
+
 config = load_config(".config/config.json")
 openai_model_name = config.get("openai_model_name")
+temperature = float(config.get("temperature"))
 token_limit = int(config.get("token_limit"))
 seed = int(config.get("openai_seed"))
 stream = config.get("openai_stream")
 similarity_threshold = float(config.get("similarity_threshold_1"))
 max_context_records = int(config.get("max_records_for_summarisation"))
 min_records_for_summarisation = int(config.get("min_records_for_summarisation"))
+
+summariser = Summariser(
+    OPENAI_API_KEY,
+    temperature=temperature,
+    max_tokens=token_limit,
+    seed=seed,
+    model=openai_model_name,
+)
 
 print(f"Using similarity threshold: {similarity_threshold}")
 
@@ -525,10 +532,10 @@ def main():
 
                 openai_user_query_id = uuid.uuid4()
                 user_prompt_context = user_prompt.format(feedback_for_context)
-                num_tokens_system_prompt = get_num_tokens_from_string(
+                num_tokens_system_prompt = summariser.get_num_tokens_from_string(
                     str(system_prompt), openai_model_name
                 )
-                num_tokens_user_prompt = get_num_tokens_from_string(
+                num_tokens_user_prompt = summariser.get_num_tokens_from_string(
                     str(user_prompt_context), openai_model_name
                 )
                 logger.info(
@@ -550,41 +557,53 @@ def main():
                         :num_feedback_for_context
                     ]
                     user_prompt_context = user_prompt.format(feedback_for_context)
-                    num_tokens_user_prompt = get_num_tokens_from_string(
+                    num_tokens_user_prompt = summariser.get_num_tokens_from_string(
                         str(user_prompt_context), openai_model_name
                     )
-                with st.spinner("Summarising..."):
-                    summary, status = create_openai_summary(
-                        system_prompt=system_prompt,
-                        user_prompt=user_prompt_context,
-                        open_api_key=OPENAI_API_KEY,
-                        model=openai_model_name,
-                        seed=seed,
-                        stream=stream,
-                    )
-                logger.info(
-                    f"user_id | {browser_session_id} | session_id:{session_id} | OpenAI user_query_id {str(openai_user_query_id)} | OpenAI call status: {status}"
-                )
 
-                st.subheader(
-                    f"Top themes based on {len(feedback_for_context)} most relevant records of user feedback"
-                )
-                st.write(
-                    "Identified and summarised by AI technology. Please verify the outputs with other data sources to ensure accuracy of information."
-                )
-                try:
+                prompt_tokens = num_tokens_system_prompt + num_tokens_user_prompt
+                summary = None
+                with st.spinner("Summarising..."):
                     if stream:
-                        st.write_stream(summary["open_summary"])
+                        try:
+                            st.subheader(
+                                f"Top themes based on {len(feedback_for_context)} most relevant records of user feedback"
+                            )
+                            st.write(
+                                "Identified and summarised by AI technology. Please verify the outputs with other data sources to ensure accuracy of information."
+                            )
+                            st.write_stream(
+                                summariser.create_openai_summary_stream(
+                                    system_prompt=system_prompt,
+                                    user_prompt=user_prompt_context,
+                                )
+                            )
+                            status = "success"
+                            summary = "STREAMING"
+                        except Exception as e:
+                            status = f"error: OpenAI request failed: {e}"
+                            st.error(f"An error occurred: {status}")
                     else:
-                        st.write(summary["open_summary"])
+                        completion, status = summariser.create_openai_summary(
+                            system_prompt=system_prompt,
+                            user_prompt=user_prompt_context,
+                        )
+                        if status == "success":
+                            # Display the summary in your Streamlit app
+                            st.write(completion)
+                            summary = completion
+                        else:
+                            st.error(f"An error occurred: {status}")
+
                     logger.info(
-                        f"user_id | {browser_session_id} | session_id:{session_id} | OpenAI user_query_id {str(openai_user_query_id)} | OpenAI summary: {summary['open_summary']}"
+                        f"user_id | {browser_session_id} | session_id:{session_id} | OpenAI user_query_id {str(openai_user_query_id)} | OpenAI call status: {status}"
                     )
                     logger.info(
-                        f"user_id | {browser_session_id} | session_id:{session_id} | OpenAI user_query_id {str(openai_user_query_id)} | OpenAI summary generated on {len(feedback_for_context)} feedback records with model {openai_model_name}, {str(summary['prompt_tokens'])} prompt tokens and {str(summary['completion_tokens'])} completion tokens"
+                        f"user_id | {browser_session_id} | session_id:{session_id} | OpenAI user_query_id {str(openai_user_query_id)} | OpenAI summary: {str(summary)}"
                     )
-                except Exception as e:
-                    st.error(f"Error generating summary: {e}")
+                    logger.info(
+                        f"user_id | {browser_session_id} | session_id:{session_id} | OpenAI user_query_id {str(openai_user_query_id)} | OpenAI summary generated on {str(len(feedback_for_context))} feedback records with model {openai_model_name}, {str(prompt_tokens)} prompt tokens and {str(sum(summariser.completion_tokens))} completion tokens"
+                    )
                 st.text("")
             elif (
                 get_summary
