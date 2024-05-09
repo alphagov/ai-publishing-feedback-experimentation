@@ -1,5 +1,5 @@
 import os
-
+import pickle
 from src.collection_utils.evaluate_collection import (
     assess_retrieval_accuracy,
     assess_scroll_retrieval,
@@ -17,6 +17,7 @@ load_dotenv()
 # Get env vars
 PUBLISHING_PROJECT_ID = os.getenv("PUBLISHING_PROJECT_ID")
 EVALUATION_TABLE = os.getenv("EVALUATION_TABLE")
+EVALUATION_TABLE = f"`{EVALUATION_TABLE}`"
 QDRANT_HOST = os.getenv("QDRANT_HOST")
 QDRANT_PORT = os.getenv("QDRANT_PORT")
 EVAL_COLLECTION_NAME = os.getenv("COLLECTION_NAME")
@@ -40,6 +41,14 @@ print("data retrieved")
 # Get the regex counts and ids
 regex_counts = get_all_regex_counts(data)
 regex_ids = get_all_regex_ids(data)
+
+# Save regex_counts as a pickle file
+with open("regex_counts.pkl", "wb") as f:
+    pickle.dump(regex_counts, f)
+
+with open("regex_ids.pkl", "wb") as f:
+    pickle.dump(regex_ids, f)
+
 print("regex counts retrieved")
 
 # Assess the retrieval accuracy

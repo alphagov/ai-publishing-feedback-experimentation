@@ -1,4 +1,5 @@
 from qdrant_client import QdrantClient
+
 from qdrant_client.http.models import FieldCondition, Filter, MatchAny
 
 
@@ -28,8 +29,6 @@ def get_semantically_similar_results(
             if filter_values
         ]
     )
-
-    print(filter)
 
     if len(filter_dict) > 0:
         search_result = client.search(
