@@ -15,6 +15,11 @@ You have two options for running the application locally:
 
 You can run locally either with docker from the command line, or using docker-compose to run everything with one command. You can also deploy the application to Cloud Run using Cloud Build which allows you to run the application in the cloud.
 
+
+### Populating the collection only
+
+You can run `collection/main.py` to populate the collection, setting environment variables to relevant IP addresses and ports, depending on whether you are running locally or remotely (e.g. on a VM). Set the arguments "-ev" to only populate the evaluation collection, and "-rs" to attempt to restore the collection(s) from the latest available snapshot. If this is not set, or fails, the script will query BigQuery, create vectors and populate the collection(s) with these.
+
 ### Running the application locally using Docker compose
 
 Note: This will run the Streamlit app, the Qdrant database, and the evaluation script on your local machine.
