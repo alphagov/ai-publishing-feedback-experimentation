@@ -154,7 +154,8 @@ model = load_model(HF_MODEL_NAME)
 config = load_config(".config/config.json")
 openai_model_name = config.get("openai_model_name")
 temperature = float(config.get("temperature"))
-token_limit = int(config.get("token_limit"))
+max_tokens = int(config.get("max_tokens"))
+context_token_limit = int(config.get("context_token_limit"))
 seed = int(config.get("openai_seed"))
 stream = config.get("openai_stream")
 similarity_threshold = float(config.get("similarity_threshold_1"))
@@ -164,7 +165,7 @@ min_records_for_summarisation = int(config.get("min_records_for_summarisation"))
 summariser = Summariser(
     OPENAI_API_KEY,
     temperature=temperature,
-    max_tokens=token_limit,
+    max_tokens=max_tokens,
     seed=seed,
     model=openai_model_name,
 )
@@ -543,13 +544,19 @@ def main():
                 )
                 # While the total number of tokens exceeds the token limit, reduce the number of feedback records to summarise
 
-                if num_tokens_system_prompt + num_tokens_user_prompt > token_limit:
+                if (
+                    num_tokens_system_prompt + num_tokens_user_prompt
+                    > context_token_limit
+                ):
                     st.warning(
                         f"Too many feedback records to summarise ({num_tokens_system_prompt + num_tokens_user_prompt} tokens) - token limit exceeded. Reducing number of feedback records to summarise..."
                     )
-                while num_tokens_system_prompt + num_tokens_user_prompt > token_limit:
+                while (
+                    num_tokens_system_prompt + num_tokens_user_prompt
+                    > context_token_limit
+                ):
                     logger.info(
-                        f"user_id | {browser_session_id} | session_id:{session_id} | OpenAI user_query_id {str(openai_user_query_id)} | Token limit {token_limit} exceeded: {num_tokens_system_prompt + num_tokens_user_prompt} tokens. Reducing number of feedback records to summarise..."
+                        f"user_id | {browser_session_id} | session_id:{session_id} | OpenAI user_query_id {str(openai_user_query_id)} | Token limit {context_token_limit} exceeded: {num_tokens_system_prompt + num_tokens_user_prompt} tokens. Reducing number of feedback records to summarise..."
                     )
                     # Reduce number of feedback records to summarise
                     num_feedback_for_context = round(num_feedback_for_context * 0.8)

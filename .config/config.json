@@ -1,6 +1,7 @@
 {
     "openai_model_name": "gpt-4-turbo-2024-04-09",
-    "token_limit": 4000,
+    "max_tokens": 4000,
+    "context_token_limit": 100000,
     "openai_seed": 42,
     "openai_stream": true,
     "temperature": 0.01,
