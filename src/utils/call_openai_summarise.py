@@ -47,7 +47,7 @@ class Summariser:
         except Exception as e:
             status = f"error: OpenAI request failed: {e}"
             print(status)
-            return {}, 0, status
+            yield "Error: OpenAI request failed. Contact the administrator."
 
     def create_openai_summary(
         self,
@@ -75,7 +75,7 @@ class Summariser:
         except Exception as e:
             status = f"error: OpenAI request failed: {e}"
             print(status)
-            return {}, 0, status
+            return {}, status
 
     def get_num_tokens_from_string(self, string: str, model: str) -> int:
         """Returns the number of tokens in a text string."""
