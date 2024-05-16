@@ -18,6 +18,9 @@ openai = "^1.13.3"
 python-dotenv = "^1.0.1"
 streamlit-js-eval = "^0.1.7"
 plotly = "^5.20.0"
+streamlit-authenticator = "^0.3.2"
+tiktoken = "^0.7.0"
+google-cloud-logging = "^3.10.0"
 
 
 [tool.poetry.group.dev.dependencies]
